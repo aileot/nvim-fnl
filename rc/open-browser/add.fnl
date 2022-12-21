@@ -1,8 +1,7 @@
 ;; TOML: web.toml
 ;; Repo: tyru/open-browser.vim
 
-(import-macros {: inc : dec : printf : expand : nnoremap! : noremap-operator!}
-               :my.macros)
+(import-macros {: printf : expand : nmap! : xmap! : range-map!} :my.macros)
 
 (local {: Operator} (require :my.utils))
 
@@ -12,20 +11,19 @@
       (vim.cmd.OpenBrowserSearch (.. "-" ?engine " " text))
       (vim.cmd.OpenBrowser text)))
 
-(lambda new-range-open-browser [engine]
-  (Operator.new (fn [start end]
-                  (let [[row1 col1] start
-                        [row2 col2] end
-                        [line] ;
-                        (vim.api.nvim_buf_get_lines 0 (dec row1) row2 true)
-                        text (line:sub (inc col1) (inc col2))]
-                    (if (engine:match "/$")
-                        (open-browser (.. engine text))
-                        (open-browser text engine))))))
+(lambda new-range-open-browser [?engine]
+  (Operator.new #(let [[line] (vim.api.nvim_buf_get_lines 0 $.row01 $.row2 true)
+                       text (line:sub $.col1 $.col2)]
+                   (if (and ?engine (?engine:match "/$"))
+                       (open-browser (.. ?engine text))
+                       (open-browser text ?engine)))))
 
-(noremap-operator! :<BSlash>B
-                   [:cb :unique :desc (printf "OpenBrowser \"<cfile>\"")]
-                   #(open-browser (expand :<cfile>)))
+(nmap! :<BSlash>bb [:unique :desc "OpenBrowser \"<cfile>\""]
+       #(open-browser (expand :<cfile>)))
+
+(xmap! :<BSlash>bb
+       [:expr :unique :desc "OpenBrowser with visualized area as URL"]
+       #(new-range-open-browser))
 
 (let [lhs-prefix :<BSlash>b
       ;; Note: Define each keymaps for which-key, though it is possible to
@@ -45,28 +43,19 @@
                   :G :github.com/
                   :H :git.sr.ht/}]
   (each [key engine (pairs key2engine)]
-    (noremap-operator! (.. lhs-prefix key)
-                       [:<callback>
-                        :unique
-                        :desc
-                        (printf "OpenBrowser on \"%s\"" engine)]
-                       (new-range-open-browser engine))
-    (nnoremap! (.. lhs-prefix key key)
-               [:<callback>
-                :unique
-                :desc
-                (printf "OpenBrowser <cword> on \"%s\"" engine)]
-               #(open-browser (expand :<cword>) engine)))
+    (range-map! (.. lhs-prefix key)
+                [:expr :unique :desc (printf "OpenBrowser on \"%s\"" engine)]
+                #(new-range-open-browser engine))
+    (nmap! (.. lhs-prefix key key)
+           [:unique :desc (printf "OpenBrowser <cword> on \"%s\"" engine)]
+           #(open-browser (expand :<cword>) engine)))
   (each [key url-prefix (pairs key2prefix)]
-    (noremap-operator! (.. lhs-prefix key)
-                       [:<callback>
-                        :unique
-                        :desc
-                        (printf "OpenBrowser preceded by \"%s\"" url-prefix)]
-                       (new-range-open-browser url-prefix))
-    (nnoremap! (.. lhs-prefix key key)
-               [:<callback>
-                :unique
-                :desc
-                (printf "OpenBrowser \"%s<cfile>\"" url-prefix)]
-               #(open-browser (.. url-prefix (expand :<cfile>))))))
+    (range-map! (.. lhs-prefix key)
+                [:expr
+                 :unique
+                 :desc
+                 (printf "OpenBrowser preceded by \"%s\"" url-prefix)]
+                #(new-range-open-browser url-prefix))
+    (nmap! (.. lhs-prefix key key)
+           [:unique :desc (printf "OpenBrowser \"%s<cfile>\"" url-prefix)]
+           #(open-browser (.. url-prefix (expand :<cfile>))))))

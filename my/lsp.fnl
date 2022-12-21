@@ -19,9 +19,9 @@
 
 (local definitions lsp.definition)
 (local references lsp.references)
-(local declarations lsp.declarations)
-(local type-definitions lsp.type_definitions)
-(local implementations lsp.implementations)
+(local declarations lsp.declaration)
+(local type-definitions lsp.type_definition)
+(local implementations lsp.implementation)
 
 (local hover (inherit-opts-for-gf lsp.hover))
 (local signature-help (inherit-opts-for-gf lsp.signature_help))
@@ -39,19 +39,17 @@
 
 (local code-actions lsp.code_action)
 (local range-code-actions
-       (Operator.new (fn [start end]
-                       (lsp.code_action {:range {: start : end}}))))
+       #(Operator.run (fn [{: start : end}]
+                        (lsp.code_action {:range {: start : end}}))))
 
 (local format (fn []
                 (lsp.format {:async true})
                 (vim.notify "[lsp] formatted entire buffer")))
 
 (local range-format
-       (Operator.new (fn [start end]
-                       (lsp.format {;
-                                    :async true
-                                    :range {: start : end}})
-                       (vim.notify "[lsp] formatted in range"))))
+       #(Operator.run (fn [{: start : end}]
+                        (lsp.format {:async true :range {: start : end}})
+                        (vim.notify "[lsp] formatted in range"))))
 
 {: document-diagnostics
  : workspace-diagnostics

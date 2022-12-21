@@ -1,23 +1,23 @@
 ;; TOML: motion.toml
 ;; Repo: aileot/nvim-repeatable
 
-(import-macros {: map-motion! : <Cmd>} :my.macros)
+(import-macros {: motion-map! : <Cmd>} :my.macros)
 
 (local RepeatableMotion (require :nvim-repeatable.motion))
 
 (local semicolon (RepeatableMotion.new [";" ","]))
 
 ;; cspell:ignore zzzv
-(map-motion! [:expr] "]]" #(-> (semicolon:register ["]]zzzv" "[[zzzv"])
+(motion-map! [:expr] "]]" #(-> (semicolon:register ["]]zzzv" "[[zzzv"])
                                (: :init)))
 
-(map-motion! [:expr] "]]" #(-> (semicolon:register ["[[zzzv" "]]zzzv"])
+(motion-map! [:expr] "]]" #(-> (semicolon:register ["[[zzzv" "]]zzzv"])
                                (: :init)))
 
-(map-motion! [:expr] "][" #(-> (semicolon:register ["][zzzv" "[]zzzv"])
+(motion-map! [:expr] "][" #(-> (semicolon:register ["][zzzv" "[]zzzv"])
                                (: :init)))
 
-(map-motion! [:expr] "[]" #(-> (semicolon:register ["[]zzzv" "][zzzv"])
+(motion-map! [:expr] "[]" #(-> (semicolon:register ["[]zzzv" "][zzzv"])
                                (: :init)))
 
 ;; (map-motion! [:expr :desc "Jump to the next misspelled word"] "]s"
@@ -28,33 +28,33 @@
 ;;              #(-> (semicolon:register ["[s" "]s"])
 ;;                   (: :init)))
 
-(map-motion! [:expr :desc "Jump to the older in change list"] "g;"
+(motion-map! [:expr :desc "Jump to the older in change list"] "g;"
              #(-> (semicolon:register ["g;zv" "g,zv"])
                   (: :init)))
 
-(map-motion! [:expr :desc "Jump to the newer in change list"] "g,"
+(motion-map! [:expr :desc "Jump to the newer in change list"] "g,"
              #(-> (semicolon:register ["g,zv" "g;zv"])
                   (: :init)))
 
 ;; f/t ///1
-(map-motion! [:expr] :f
+(motion-map! [:expr] :f
              #(-> (semicolon:register ["<Plug>(leap-;)" "<Plug>(leap-,)"])
                   (: :init "<Plug>(leap-f)")))
 
-(map-motion! [:expr] :t
+(motion-map! [:expr] :t
              #(-> (semicolon:register ["<Plug>(leap-;)" "<Plug>(leap-,)"])
                   (: :init "<Plug>(leap-t)")))
 
-(map-motion! [:expr] :F
+(motion-map! [:expr] :F
              #(-> (semicolon:register ["<Plug>(leap-;)" "<Plug>(leap-,)"])
                   (: :init "<Plug>(leap-F)")))
 
-(map-motion! [:expr] :T
+(motion-map! [:expr] :T
              #(-> (semicolon:register ["<Plug>(leap-;)" "<Plug>(leap-,)"])
                   (: :init "<Plug>(leap-T)")))
 
 ;; Diff ///1
-(map-motion! [:expr :desc "Jump to prev diff line"] "[c"
+(motion-map! [:expr :desc "Jump to prev diff line"] "[c"
              #(let [[forward backward] ;
                     (if vim.wo.diff ["[c" "]c"]
                         (let [available? (pcall require :gitsigns)]
@@ -67,7 +67,7 @@
                 (-> (semicolon:register [forward backward])
                     (: :init))))
 
-(map-motion! [:expr :desc "Jump to next diff line"] "]c"
+(motion-map! [:expr :desc "Jump to next diff line"] "]c"
              #(let [[forward backward] ;
                     (if vim.wo.diff ["]c" "[c"]
                         (let [available? (pcall require :gitsigns)]
@@ -84,21 +84,21 @@
 (let [diagnostic-config {:wrap false
                          :severity {:min vim.diagnostic.severity.WARN}}]
   ;; Mnemonic: X mark to incorrect position.
-  (map-motion! [:desc "Jump to prev diagnostic position"] "[x"
+  (motion-map! [:desc "Jump to prev diagnostic position"] "[x"
                #(-> (semicolon:register [#(vim.diagnostic.goto_prev diagnostic-config)
                                          #(vim.diagnostic.goto_next diagnostic-config)])
                     (: :init)))
-  (map-motion! [:desc "Jump to next diagnostic position"] "]x"
+  (motion-map! [:desc "Jump to next diagnostic position"] "]x"
                #(-> (semicolon:register [#(vim.diagnostic.goto_next diagnostic-config)
                                          #(vim.diagnostic.goto_prev diagnostic-config)])
                     (: :init))))
 
 (let [diagnostic-config {:wrap false}]
-  (map-motion! [:desc "Jump to prev diagnostic position"] "[X"
+  (motion-map! [:desc "Jump to prev diagnostic position"] "[X"
                #(-> (semicolon:register [#(vim.diagnostic.goto_prev diagnostic-config)
                                          #(vim.diagnostic.goto_next diagnostic-config)])
                     (: :init)))
-  (map-motion! [:desc "Jump to next diagnostic position"] "]X"
+  (motion-map! [:desc "Jump to next diagnostic position"] "]X"
                #(-> (semicolon:register [#(vim.diagnostic.goto_next diagnostic-config)
                                          #(vim.diagnostic.goto_prev diagnostic-config)])
                     (: :init))))

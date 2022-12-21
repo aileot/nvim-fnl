@@ -1,7 +1,7 @@
 ;; TOML: debug.toml
 ;; Repo: rcarriga/nvim-dap-ui
 
-(import-macros {: setlocal! : nnoremap! : augroup! : au! : str->keycodes}
+(import-macros {: setlocal! : nmap! : augroup! : au! : str->keycodes}
                :my.macros)
 
 (local dap (require :dap))
@@ -25,10 +25,10 @@
 
 (fn enable-local-mappings-to-widgets []
   (each [lhs rhs (pairs local-mappings.widgets)]
-    (nnoremap! [:<buffer>] lhs rhs)))
+    (nmap! [:<buffer>] lhs rhs)))
 
-(augroup! :rcDapUI/SetlocalMappingsOnLaunch
-  (au! :FileType [:dapui_*] enable-local-mappings-to-widgets))
+(augroup! :rcDapUISetlocalMappingsOnLaunch
+  (au! :FileType [:dapui_*] `enable-local-mappings-to-widgets))
 
 (dapui.setup {:mappings {:expand [:zo :zO]
                          ;;  Toggle showing any children of variable in "Scope".

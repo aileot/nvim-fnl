@@ -1,7 +1,7 @@
 ;; TOML: appearance.toml
 ;; Repo: rcarriga/nvim-notify
 
-(import-macros {: nnoremap! : <Cmd>} :my.macros)
+(import-macros {: nmap! : <Cmd>} :my.macros)
 
 (local notify (require :notify))
 
@@ -13,5 +13,5 @@
 (let [(ok? telescope) (pcall require :telescope)]
   (when ok?
     (telescope.load_extension :notify)
-    (nnoremap! [:desc "Show notification history"] :<Space>eM
-               (<Cmd> "Telescope notify"))))
+    (nmap! [:desc "Show notification history"] :<Space>eM
+           (<Cmd> "Telescope notify"))))

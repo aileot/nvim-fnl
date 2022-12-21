@@ -10,17 +10,18 @@
 (macro setup-keymaps []
   (let [printf string.format
         prefix :<BSlash>u
-        suffix-map {:t {:case :Title :desc "Change To Title Case"}
-                    "(" {:case :Sentence :desc "Change to sentence case"}
+        suffix-map {"(" {:case :Sentence :desc "Change to sentence case"}
                     ")" {:case :Space :desc "change to normal case"}
-                    :c {:case :Camel :desc :changeToCamelCase}
-                    :p {:case :Pascal :desc :ChangeToPascalCase}
                     :- {:case :Kebab :desc :change-to-kebab-case}
-                    :k {:case :Kebab :desc :change-to-kebab-case}
-                    :_ {:case :Snake :desc :change_to_snake_case}
-                    :s {:case :Snake :desc :change_to_snake_case}
                     :. {:case :Dot :desc :change.to.dot.case}
-                    :d {:case :Dot :desc :change.to.dot.case}}]
+                    :_ {:case :Snake :desc :change_to_snake_case}
+                    :c {:case :Camel :desc :changeToCamelCase}
+                    :d {:case :Dot :desc :change.to.dot.case}
+                    :k {:case :Kebab :desc :change-to-kebab-case}
+                    :p {:case :Pascal :desc :ChangeToPascalCase}
+                    :s {:case :Snake :desc :change_to_snake_case}
+                    :t {:case :Title :desc "Change To Title Case"}
+                    :u {:case :Upper :desc :CHANGE_TO_UPPER_CASE}}]
     `(do
        ,(icollect [suffix {: case : desc} (pairs suffix-map)]
           (let [operator (printf "<Plug>Caser%sCase" case)
@@ -35,8 +36,3 @@
                (nmap! ,l-lhs ,l-operator {:desc ,l-desc})))))))
 
 (setup-keymaps)
-
-(nmap! [:desc :CHANGE_TO_UPPER_CASE] :<BSlash>U :<Plug>CaserUpperCase)
-(xmap! [:desc :CHANGE_TO_UPPER_CASE] :<BSlash>U :<Plug>CaserVUpperCase)
-(nmap! [:desc :CHANGE_TO_UPPER_CASE_IN_LINE] :<BSlash>UU
-       :V<Plug>CaserVUpperCase)

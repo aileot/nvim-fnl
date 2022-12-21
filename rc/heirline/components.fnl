@@ -16,9 +16,7 @@
 (local {: dap : lsp : vim} (require :my.components.status))
 
 (local utils (require :heirline.utils))
-(local cond (require :heirline.conditions))
-(local {: window-width : ratio-to-window-width : gather}
-       (require :rc.heirline.utils))
+(local {: window-width : gather} (require :rc.heirline.utils))
 
 (local components {})
 
@@ -55,11 +53,11 @@
               ;; Note: This autocmd to update statusline/tabline on entering
               ;; Operator-pending mode incredibly consumes CPU.
               (comment (when-not self.loaded?
-                                 (au! :rcHeirlineComponents ;
-                                      :ModeChanged ["*:*o"]
-                                      ["Let heirline update mode component on Operator-pending mode"]
-                                      :redrawstatus)
-                                 (tset self :loaded? true))))
+                         (au! :rcHeirlineComponents ;
+                              :ModeChanged ["*:*o"]
+                              ["Let heirline update mode component on Operator-pending mode"]
+                              :redrawstatus)
+                         (tset self :loaded? true))))
       :provider (fn [self]
                   (mode.mix self.mode))})
 
@@ -76,7 +74,7 @@
                                     (-> (vim.fn.winnr "#") (vim.fn.winbufnr))
                                     0)]
                       ;; (vim.wait 200 #(?. vim.b bufnr :gitsigns_status_dict))
-                      (let [?status (?. vim.b bufnr :gitsigns_status_dict)
+                      (let [?status (. vim.b bufnr :gitsigns_status_dict)
                             ?head (or (?. ?status :head) "")
                             fg (if (= "" ?head) color.red (?head:match "/")
                                    color.yellow
@@ -90,7 +88,7 @@
                         (tset self :hl-branch {: fg : bg :bold true}))))
             :provider (fn [self]
                         (let [prefix ""
-                              ?head (?. self :status :head)]
+                              ?head (?. self.status :head)]
                           (.. " %-6(" prefix " " (or ?head :none) "%) ")))}
            git-diff-count-added {:provider (fn [self]
                                              (let [?count-added (?. self
@@ -209,15 +207,14 @@
                           :TypeParameter :Type}]
        {:update [:BufEnter :CursorMoved]
         :condition (fn [self]
-                     (let [(ok? navic) (pcall require :nvim-navic)]
-                       (if ok?
-                           (do
-                             (tset self :navigator navic)
-                             (navic.is_available))
-                           (let [(ok? gps) (pcall require :nvim-gps)]
-                             (when ok?
-                               (tset self :navigator gps)
-                               (gps.is_available))))))
+                     (match (pcall require :nvim-navic)
+                       (true navic) (do
+                                      (tset self :navigator navic)
+                                      (navic.is_available))
+                       _ (match (pcall require :nvim-gps)
+                           (true gps) (do
+                                        (tset self :navigator gps)
+                                        (gps.is_available)))))
         :init (fn [self]
                 (let [navigator self.navigator
                       children []
@@ -297,19 +294,20 @@
 (set components.root-name
      {:update [:BufWinEnter :BufEnter]
       :provider (fn []
-                  (let [?root (?. vim.b :gitsigns_status_dict :root)
+                  (let [?root (?. vim.b.gitsigns_status_dict :root)
                         filetype vim.bo.filetype]
                     (if (contains? [:help :man] filetype) filetype ;
-                        ?root (expand ?root ":t")
+                        ?root (vim.fn.fnamemodify ?root ":t")
                         (let [path (expand "%:p:~")
                               ?protocol (path:match "^(%S-)://")]
                           (if ?protocol ?protocol ;
-                              (path:match "^~/") :$HOME)))))})
+                              (path:match "^~/") :$HOME
+                              path)))))})
 
 (set components.path-after-root ;
      {:update [:BufWinEnter :BufEnter :VimResized :WinClosed :WinNew]
       :provider (fn [self]
-                  (let [?root (?. vim.b :gitsigns_status_dict :root)
+                  (let [?root (?. vim.b.gitsigns_status_dict :root)
                         win-width self.win-width
                         full-path self.path
                         target-path (full-path:gsub "^%S-://(%S+)" "%1")
@@ -319,18 +317,18 @@
                                      ;; Note: `gsub` instead fails to truncate
                                      ;; when `?root` includes any Lua pattern letter.
                                      (full-path:sub (+ 2 (length ?root)))
-                                     (-> (expand target-path ":~")
+                                     (-> (vim.fn.fnamemodify target-path ":~")
                                          (: :gsub "^~/" "")))
-                                 (let [dir (expand target-path ":h:t")
-                                       filename (expand target-path ":t")
+                                 (let [dir (vim.fn.fnamemodify target-path
+                                                               ":h:t")
+                                       filename (vim.fn.fnamemodify target-path
+                                                                    ":t")
                                        dir-fname ;
                                        (.. dir "/" filename)
                                        truncated-path ;
                                        (if (< (length dir-fname)
                                               (* win-width (/ 1 4)))
                                            dir-fname
-                                           (< (length filename)
-                                              (* win-width (/ 1 2)))
                                            filename)]
                                    (.. "/" truncated-path)))]
                     (.. "%8(" path "%)")))})
@@ -412,8 +410,7 @@
 ;; Tabline ///1
 (set components.tabpages
      (let [tabpage {:hl (fn [self]
-                          (if self.is_active ;
-                              {:fg color.yellow :bold true} ;
+                          (if self.is_active {:fg color.yellow :bold true}
                               {:fg color.fg}))
                     :condition #(< 1 (length (vim.api.nvim_list_tabpages)))
                     :provider (fn [self]

@@ -6,4 +6,4 @@
 (g! "gitter#token"
     (first (vim.fn.readfile (vim.fs.normalize :$VIM_API_TOKEN/gitter))))
 
-(command! :ChatInReadingVimrc "tabe gitter://room/vim-jp/reading-vimrc")
+(command! :GitterReadingVimrc "tabe gitter://room/vim-jp/reading-vimrc")

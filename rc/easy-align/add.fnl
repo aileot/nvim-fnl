@@ -1,8 +1,7 @@
 ;; TOML: operator.toml
 ;; Repo: junegunn/vim-easy-align
 
-(import-macros {: map-operator! : nnoremap! : xnoremap! : <Cmd> : <C-u>}
-               :my.macros)
+(import-macros {: range-map! : range-map! : <Plug>} :my.macros)
 
 ;; Excerpt:
 ;; * Filter
@@ -12,18 +11,13 @@
 ;;      (just type only '/')); no need to type '\/')
 
 ;; Mnemonic: Queue up
-(map-operator! [:expr] :<BSlash>q
-               (fn []
-                 (pcall vim.fn.repeat#set "\\<Plug>(EasyAlign)")
-                 "<Plug>(EasyAlign)"))
+(range-map! [:expr :remap] :<BSlash>q
+            (fn []
+              (pcall vim.fn.repeat#set "\\<Plug>(EasyAlign)")
+              (<Plug> :EasyAlign)))
 
-(map-operator! :<BSlash>Q "<Plug>(align-by-spaces)")
-(nnoremap! [:expr] "<Plug>(align-by-spaces)"
-           (fn []
-             (pcall vim.fn.repeat#set "\\<Plug>(align-by-spaces)")
-             (<Cmd> "EasyAlign *\\ ig[]")))
-
-(xnoremap! [:expr] "<Plug>(align-by-spaces)"
-           (fn []
-             (pcall vim.fn.repeat#set "\\<Plug>(align-by-spaces)")
-             (<C-u> "*EasyAlign *\\ ig[]")))
+(range-map! [:remap] :<BSlash>Q (<Plug> :align-by-spaces))
+(range-map! [:expr] (<Plug> :align-by-spaces)
+                (fn []
+                  (pcall vim.fn.repeat#set "\\<Plug>(align-by-spaces)")
+                  ":EasyAlign *\\ ig[]<CR>"))

@@ -1,8 +1,8 @@
 ;; TOML: appearance.toml
 ;; Repo: uga-rosa/ccc.nvim
 
-(import-macros {: imap! : nnoremap! : <Cmd>} :my.macros)
+(import-macros {: imap! : nmap! : <Plug> : <Cmd>} :my.macros)
 
-(imap! :<C-x>c "<Plug>(ccc-insert)")
+(imap! [:remap] :<C-x>c (<Plug> :ccc-insert))
 
-(nnoremap! :<Space>cp (<Cmd> :CccPick))
+(nmap! :<Space>cp (<Cmd> :CccPick))

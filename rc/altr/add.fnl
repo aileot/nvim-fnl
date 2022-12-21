@@ -1,17 +1,53 @@
 ;; TOML: browse.toml
 ;; Repo: kana/vim-altr
 
-(import-macros {: nmap!} :my.macros)
+;; cspell:word altr
 
-(nmap! "]a" "<Plug>(altr-forward)")
-(nmap! "[a" "<Plug>(altr-back)")
-;
-(nmap! "<C-w>]a" "<C-w>s<Plug>(altr-forward)")
-(nmap! "<C-w>[a" "<C-w>s<Plug>(altr-back)")
-(nmap! "<C-w>]A" "<C-w>v<Plug>(altr-forward)")
-(nmap! "<C-w>[A" "<C-w>v<Plug>(altr-back)")
-;
-(nmap! "]<C-w>a" "<C-w>s<Plug>(altr-forward)")
-(nmap! "[<C-w>a" "<C-w>s<Plug>(altr-back)")
-(nmap! "]<C-w>A" "<C-w>v<Plug>(altr-forward)")
-(nmap! "[<C-w>A" "<C-w>v<Plug>(altr-back)")
+(import-macros {: nmap! : <Cmd> : <Plug>} :my.macros)
+
+(nmap! [:desc "[altr] :edit <next-file>"] "]a" (<Plug> :altr-forward))
+(nmap! [:desc "[altr] :edit <previous-file>"] "[a" (<Plug> :altr-back))
+
+(macro next-altr-prefix [cmd-prefix]
+  `(.. (<Cmd> ,cmd-prefix) (<Plug> :altr-forward)))
+
+(macro previous-altr-prefix [cmd-prefix]
+  `(.. (<Cmd> ,cmd-prefix) (<Plug> :altr-backward)))
+
+(nmap! [:desc "[altr] :split <next-file>"] "<C-w>]a"
+       (.. :<C-w>s (<Plug> :altr-forward)))
+
+(nmap! [:desc "[altr] :split <previous-file>"] "<C-w>[a"
+       (.. :<C-w>s (<Plug> :altr-back)))
+
+(nmap! [:desc "[altr] :vsplit <next-file>"] "<C-w>]A"
+       (.. :<C-w>v (<Plug> :altr-forward)))
+
+(nmap! [:desc "[altr] :vsplit <previous-file>"] "<C-w>[A"
+       (.. :<C-w>v (<Plug> :altr-back)))
+
+(nmap! [:desc "[altr] :split <next-file>"] "]<C-w>a"
+       (.. :<C-w>s (<Plug> :altr-forward)))
+
+(nmap! [:desc "[altr] :split <previous-file>"] "[<C-w>a"
+       (.. :<C-w>s (<Plug> :altr-back)))
+
+(nmap! [:desc "[altr] :vsplit <next-file>"] "]<C-w>A"
+       (.. :<C-w>v (<Plug> :altr-forward)))
+
+(nmap! [:desc "[altr] :vsplit <previous-file>"] "[<C-w>A"
+       (.. :<C-w>v (<Plug> :altr-back)))
+
+;; Open related buffer in new Tab
+
+(nmap! [:desc "[altr] <next-file> in new tab"] "<C-w>]ga"
+       (.. :<C-w>s<C-w>T (<Plug> :altr-forward)))
+
+(nmap! [:desc "[altr] <previous-file> in new tab"] "<C-w>[ga"
+       (.. :<C-w>s<C-w>T (<Plug> :altr-back)))
+
+(nmap! [:desc "[altr] <next-file> in new tab"] "]<C-w>ga"
+       (.. :<C-w>s<C-w>T (<Plug> :altr-forward)))
+
+(nmap! [:desc "[altr] <previous-file> in new tab"] "[<C-w>ga"
+       (.. :<C-w>s<C-w>T (<Plug> :altr-back)))

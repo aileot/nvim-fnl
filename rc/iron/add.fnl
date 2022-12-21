@@ -1,6 +1,6 @@
 ;; TOML: shell.toml
 ;; Repo: hkupty/iron.nvim
 
-(import-macros {: nnoremap! : <Cmd>} :my.macros)
+(import-macros {: nmap! : <Cmd>} :my.macros)
 
-(nnoremap! :<Space>rs (<Cmd> "IronRepl"))
+(nmap! :<Space>rs (<Cmd> "IronRepl"))

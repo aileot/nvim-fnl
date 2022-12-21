@@ -22,43 +22,17 @@
 (local {: set!
         : setlocal!
         : setglobal!
+        : go!
+        : bo!
+        : wo!
         : g!
         : b!
         : w!
         : t!
         : v!
         : env!
-        : noremap!
         : map!
         : unmap!
-        : noremap-all!
-        : noremap-motion!
-        : noremap-textobj!
-        : noremap-input!
-        : noremap-operator!
-        : nnoremap!
-        : vnoremap!
-        : xnoremap!
-        : snoremap!
-        : onoremap!
-        : inoremap!
-        : lnoremap!
-        : cnoremap!
-        : tnoremap!
-        : map-all!
-        : map-motion!
-        : map-textobj!
-        : map-input!
-        : map-operator!
-        : nmap!
-        : vmap!
-        : xmap!
-        : smap!
-        : omap!
-        : imap!
-        : lmap!
-        : cmap!
-        : tmap!
         : <C-u>
         : <Cmd>
         : command!
@@ -66,7 +40,6 @@
         : augroup+
         : au!
         : autocmd!
-        : str->keycodes
         : feedkeys!
         : highlight!} (require :nvim-laurel.macros))
 
@@ -108,11 +81,13 @@
   table?, sequence?, etc., is only available in compile time."
   `(= (type ,x) :table))
 
-;; Decision ///1
+(fn even? [x]
+  "Check if `x` is even number."
+  `(and ,(num? x) (= 0 (% ,x 2))))
 
-(lambda unless [cond ...]
-  `(if (not ,cond)
-       ,...))
+(fn odd? [x]
+  "Check if `x` is odd number."
+  `(and ,(num? x) (= 1 (% ,x 2))))
 
 ;; String ///1
 
@@ -175,6 +150,74 @@
      ,...
      nil))
 
+(lambda ->table [...]
+  "Construct a Lua table, that is, an aassociative array.
+  ```fennel
+  (->table ...)
+  ```
+  @param ... The last argument must be kv-table.
+  @return kv-table"
+  (var i 1)
+  (let [last-idx (select "#" ...)
+        vargs (if (< 1 last-idx) [...]
+                  (error (.. "expected two args at least, got " last-idx)))
+        new-table (table.remove vargs)]
+    (assert-compile (table? new-table) "Expected table for the last argument"
+                    new-table)
+    ;; Note: `collect` instead cannot bind to integers.
+    (each [_ v (ipairs vargs)]
+      (table.insert new-table i v)
+      (++ i))
+    new-table))
+
+;; Decision ///1
+
+(lambda when-not [cond ...]
+  `(when (not ,cond)
+     ,...))
+
+(lambda if-not [cond ...]
+  `(if (not ,cond)
+       ,...))
+
+(lambda conditional-let [operator bindings ...]
+  ;; Note: Fennel doesn't have the `if-let` macro from Clojure in favor of the
+  ;; `match` macro according to https://fennel-lang.org/reference.
+  (assert-compile (sequence? bindings) ;
+                  (printf "bindings must be sequence, got %s\ndump:\n%s"
+                          (type bindings) (view bindings))
+                  bindings)
+  (let [arg-num (length bindings)
+        _ (assert-compile (even? arg-num) ;
+                          (printf (.. "number of items in bindings must be even,"
+                                      " got %d\ndump:\n%s")
+                                  arg-num (view bindings))
+                          bindings)
+        assignees (fcollect [i 1 arg-num 2]
+                    (operator (. bindings i)))
+        predicate `(and ,(unpack assignees))]
+    ;; Note: Technically, bindings should probably be done after testing, but
+    ;; few reasons to complicate it for personal use at present.
+    `(let ,bindings
+       (if ,predicate
+           ,...))))
+
+(lambda if-let [bindings ...]
+  (conditional-let #$ bindings ...))
+
+(lambda when-let [bindings ...]
+  (if-let bindings
+    (do
+      ...)))
+
+(lambda if-some [bindings ...]
+  (conditional-let #`(not= ,$ nil) bindings ...))
+
+(lambda when-some [bindings ...]
+  (if-some bindings
+    (do
+      ...)))
+
 ;; File System ///1
 
 (lambda executable? [x]
@@ -190,17 +233,15 @@
   (let [flag (or ?flag :p)]
     `(vim.fn.mkdir ,dir ,flag)))
 
-(lambda expand [path ?mods]
-  "Expand special keywords with either vim.fn.expand, vim.fs.normalize, or
-  vim.fn.fnamemodify."
-  (if ?mods `(vim.fn.fnamemodify ,path ,?mods)
-      (or (sym? path) (list? path)
+(lambda expand [path]
+  "Expand special keywords with either vim.fn.expand or vim.fs.normalize."
+  (if (or (sym? path) (list? path)
           (and (str? path) ;
-               (or (path:match "[%#*:]") (path:match "<%S+>")))) ;
+               (or (path:match "[%#*:]") (path:match "<%S+>"))))
       (if (contains? ["%" "%:p"] path)
           `(-> (vim.api.nvim_get_current_buf)
                (vim.api.nvim_buf_get_name))
-          `(vim.fn.expand ,path)) ;
+          `(vim.fn.expand ,path))
       `(vim.fs.normalize ,path)))
 
 ;; Vim ///1
@@ -219,7 +260,8 @@
 
 (lambda echo! [text ?hl-group]
   "Imitation of `:echo`. It doesn't write to `:messages`."
-  `(vim.api.nvim_echo [[,text ,?hl-group]] false {}))
+  (let [chunk (if ?hl-group [text ?hl-group] [text :Normal])]
+    `(vim.api.nvim_echo [,chunk] false {})))
 
 ;; Note: buffer/window is a general term and could be conflicted.
 
@@ -239,6 +281,9 @@
   "Check if window is invalid."
   `(not ,(valid-win? win-id)))
 
+(lambda set-cursor! [win-id pos]
+  `(vim.api.nvim_win_set_cursor ,win-id ,pos))
+
 (lambda doautocmd! [event|opts ?opts]
   "Wrapper of `nvim_exec_autocmds`.
   ```fennel
@@ -246,7 +291,6 @@
   (doautocmd! event opts) ; i.e., alias of nvim_exec_autocmds.
   (doautocmd! event pattern)
   ```
-
   @param event string
   @param opts kv-table
   @param pattern bare-string|bare-sequence
@@ -258,11 +302,174 @@
       `(vim.api.nvim_exec_autocmds ,event|opts {:pattern ,?opts})
       `(vim.api.nvim_exec_autocmds ,event|opts ,?opts)))
 
+(lambda buf-augroup! [name ...]
+  "`augroup!` whose name is suffixed by current buffer number."
+  (let [new-name `(.. ,name "#" (vim.api.nvim_get_current_buf))]
+    (augroup! new-name
+      ...)))
+
+(fn vim-truthy? [expr]
+  ;; Note: Lua expr is always truthy or falsy, so the prefix `vim-` is probably
+  ;; unnecessary: it's a matter of taste.
+  (if (list? expr)
+      `(let [res# ,expr]
+         (or (= res# 1) (= res# true)))
+      `(or (= ,expr 1) (= ,expr true))))
+
+(fn vim-falsy? [expr]
+  (if (list? expr)
+      `(let [res# ,expr]
+         (or (= res# 0) (= res# false) (= res# nil)))
+      `(or (= ,res 0) (= ,res false) (= ,res nil))))
+
+(lambda str->keycodes [str]
+  "Replace terminal codes and keycodes in a string.
+  ```fennel
+  (str->keycodes str)
+  ```
+  @param str string
+  @return string"
+  `(vim.api.nvim_replace_termcodes ,str true true true))
+
+;; Keymap ///2
+(lambda lua->oneliner [lua-expr ...]
+  (lua-expr:gsub "%s*\\n%s*" " "))
+
+(lambda <Lua> [lua-expr ...]
+  "Return `<Cmd>lua lua-expr<CR>` in string by `(<Lua> :lua-expr)`.
+  Note: `lua` escape hatch is meaningless as return value in `expr` mapping.
+  ```fennel
+  (<Lua> lua-expr ...)
+  ```
+  @param lua-expr string
+  @param ...
+  @return string"
+  (if (str? lua-expr)
+      (let [lua-oneliner (-> (lua->oneliner lua-expr)
+                             (: :format ...))]
+        (.. "<Cmd>lua " lua-oneliner :<CR>))
+      `(.. "<Cmd>lua " ,lua-expr :<CR>)))
+
+(lambda <Lua>* [lua-expr ...]
+  "Return `<Esc><Cmd>*lua lua-expr<CR>` in string by `(<Lua>* :lua-expr)`.
+  ```fennel
+  (<Lua>* lua-expr ...)
+  ```
+  @param lua-expr string
+  @return string"
+  (if (str? lua-expr)
+      (let [lua-oneliner (-> (lua->oneliner lua-expr)
+                             (: :format ...))]
+        (.. "<Esc><Cmd>*lua " lua-oneliner :<CR>))
+      `(.. "<Esc><Cmd>*lua " ,lua-expr :<CR>)))
+
+(lambda <Cmd>* [vim-cmd]
+  "Return `<Esc><Cmd>*vim-cmd<CR>` in string by `(<Cmd>* :vim-cmd)`.
+  Note: `:vim-cmd<CR>` instead requires `silent` in `opts` not to show the line
+  `vim-cmd` in cmdline.
+  ```fennel
+  (<Cmd>* vim-cmd)
+  ```
+  @param vim-cmd string
+  @return string"
+  (if (str? vim-cmd)
+      (.. :<Esc><Cmd>* vim-cmd :<CR>)
+      `(.. :<Esc><Cmd>* ,vim-cmd :<CR>)))
+
+(lambda <C-u>* [vim-cmd]
+  "Return `:vim-cmd<CR>` in string by `(<C-u>* :vim-cmd)`.
+  It's a matter of taste.
+  ```fennel
+  (<C-u>* vim-cmd)
+  ```
+  @param vim-cmd string
+  @return string"
+  (if (str? vim-cmd)
+      (.. ":" vim-cmd :<CR>)
+      `(.. ":" ,vim-cmd :<CR>)))
+
+(lambda <Plug> [text]
+  "Return `<Plug>(text)` by `(<Plug> :text)`.
+  ```fennel
+  (<Plug> text)
+  ```
+  @param text string
+  @return string"
+  (if (str? text)
+      (.. "<Plug>(" text ")")
+      `(.. "<Plug>(" ,text ")")))
+
+;; Wrappers ///3
+
+(lambda nmap! [...]
+  (map! :n ...))
+
+(lambda vmap! [...]
+  (map! :v ...))
+
+(lambda xmap! [...]
+  (map! :x ...))
+
+(lambda smap! [...]
+  (map! :s ...))
+
+(lambda omap! [...]
+  (map! :o ...))
+
+(lambda imap! [...]
+  (map! :i ...))
+
+(lambda lmap! [...]
+  (map! :l ...))
+
+(lambda cmap! [...]
+  (map! :c ...))
+
+(lambda tmap! [...]
+  (map! :t ...))
+
+(lambda omni-map! [...]
+  (map! ["" "!" :l :t] ...))
+
+(lambda input-map! [...]
+  (map! "!" ...))
+
+(lambda range-map! [...]
+  (map! [:n :x] ...))
+
+(lambda keymap/invisible-key? [lhs]
+  "Check if `lhs` is invisible key like `<Plug>`, `<CR>`, `<C-f>`, `<F5>`, etc.
+  @param lhs string
+  @return boolean"
+  (or ;; cspell:ignore acdms
+      ;; <C-f>, <M-b>, ...
+      (and (lhs:match "<[acdmsACDMS]%-[a-zA-Z0-9]+>")
+           (not (lhs:match "<[sS]%-[a-zA-Z]>"))) ;
+      ;; <CR>, <Left>, ...
+      (lhs:match "<[a-zA-Z][a-zA-Z]+>") ;
+      ;; <k0>, <F5>, ...
+      (lhs:match "<[fkFK][0-9]>")))
+
+(lambda motion-map! [...]
+  (let [[_ lhs] (if (= :string (type ...)) [nil ...] [...])]
+    (if (keymap/invisible-key? lhs)
+        (map! "" ...)
+        (map! [:n :o :x] ...))))
+
+(lambda textobj-map! [...]
+  (map! [:o :x] ...))
+
+(lambda swap-map! [modes lhs rhs]
+  "Map keys to swap each non-recursively."
+  `(do
+     ,(map! modes lhs rhs)
+     ,(map! modes rhs lhs)))
+
 ;; Export ///1
 
-{: unless
- :when-not unless
- :if-not unless
+{:unless when-not
+ : when-not
+ : if-not
  : nil?
  : bool?
  : str?
@@ -270,9 +477,12 @@
  : fn?
  : seq?
  : tbl?
+ : odd?
+ : even?
  : ->str
  : ->num
  : ->nil
+ : ->table
  : printf
  : println
  : inc
@@ -286,43 +496,17 @@
  : set!
  : setlocal!
  : setglobal!
+ : go!
+ : bo!
+ : wo!
  : g!
  : b!
  : w!
  : t!
  : v!
  : env!
- : noremap!
  : map!
  : unmap!
- : noremap-all!
- : noremap-motion!
- : noremap-textobj!
- : noremap-input!
- : noremap-operator!
- : nnoremap!
- : vnoremap!
- : xnoremap!
- : snoremap!
- : onoremap!
- : inoremap!
- : lnoremap!
- : cnoremap!
- : tnoremap!
- : map-all!
- : map-motion!
- : map-textobj!
- : map-input!
- : map-operator!
- : nmap!
- : vmap!
- : xmap!
- : smap!
- : omap!
- : imap!
- : lmap!
- : cmap!
- : tmap!
  : command!
  : augroup!
  : augroup+
@@ -336,6 +520,10 @@
  : executable?
  : directory?
  : mkdir
+ : if-let
+ : when-let
+ : if-some
+ : when-some
  : expand
  : has?
  : exists?
@@ -345,5 +533,29 @@
  : valid-win?
  : invalid-buf?
  : invalid-win?
+ : set-cursor!
+ : buf-augroup!
+ : vim-truthy?
+ : vim-falsy?
  : <C-u>
- : <Cmd>}
+ : <Cmd>
+ : <Lua>
+ : <Cmd>*
+ : <C-u>*
+ : <Lua>*
+ : <Plug>
+ : nmap!
+ : vmap!
+ : xmap!
+ : smap!
+ : omap!
+ : imap!
+ : lmap!
+ : cmap!
+ : tmap!
+ : omni-map!
+ : input-map!
+ : range-map!
+ : motion-map!
+ : textobj-map!
+ : swap-map!}

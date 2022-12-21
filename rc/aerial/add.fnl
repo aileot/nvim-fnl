@@ -1,7 +1,6 @@
 ;; TOML: browse.toml
 ;; Repo: stevearc/aerial.nvim
 
-(import-macros {: nnoremap! : <Cmd>} :my.macros)
+(import-macros {: nmap! : <Cmd>} :my.macros)
 
-(nnoremap! :<Space>eo [:desc "Enumerate symbols in Outline"]
-           (<Cmd> "AerialToggle right"))
+(nmap! :<Space>ei [:desc "Enumerate Indices"] (<Cmd> "AerialToggle right"))

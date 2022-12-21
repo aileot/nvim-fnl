@@ -12,7 +12,7 @@
 
 (fn idle-network-autocmds []
   "Enable \"Network\" augroup on-demand."
-  (let [id (augroup! :myLazyNetrw/ExtractRemoteFeatures)]
+  (let [id (augroup! :myLazyNetrwExtractRemoteFeatures)]
     (lambda enable-network-autocmds [{: event : file}]
       ;; Note: Checked by `exists()` in netrwPlugin.vim; neither set it to
       ;; `nil` nor `false` is useless.
@@ -24,9 +24,9 @@
       (doautocmd! event {:group :Network :pattern file}))
     (au! id [:BufWriteCmd :FileWriteCmd]
          ["{file,ftp,rcp,scp,dav,davs,rsync,sftp,http}://*"]
-         #(enable-network-autocmds $))
+         `enable-network-autocmds)
     (au! id [:BufReadCmd :FileReadCmd :SourceCmd]
          ["{file,ftp,rcp,scp,dav,davs,rsync,sftp,http,https}://*"]
-         #(enable-network-autocmds $))))
+         `enable-network-autocmds)))
 
 {: disable-netrw : idle-network-autocmds}

@@ -1,14 +1,10 @@
 ;; TOML: debug.toml
 ;; Repo: mfussenegger/nvim-dap
 
-(import-macros {: nnoremap!} :my.macros)
+(import-macros {: nmap! : <Lua>} :my.macros)
 
-(fn toggle-debug-breakpoint []
-  (let [{: toggle_breakpoint} (require :dap)]
-    (toggle_breakpoint)))
-
-(nnoremap! :mb toggle-debug-breakpoint)
-(nnoremap! :<F9> toggle-debug-breakpoint)
+(nmap! :mb (<Lua> "require'dap'.toggle_breakpoint()"))
+(nmap! :<F9> (<Lua> "require'dap'.toggle_breakpoint()"))
 
 (fn continue-debug []
   (let [filetype vim.bo.filetype
@@ -17,5 +13,5 @@
                          (. (require :dap) :continue))]
     (dap-continue)))
 
-(nnoremap! :mc continue-debug)
-(nnoremap! :<F5> continue-debug)
+(nmap! :mc `continue-debug)
+(nmap! :<F5> `continue-debug)

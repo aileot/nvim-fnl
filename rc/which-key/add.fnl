@@ -1,8 +1,8 @@
 ;; TOML: default_mapping.toml
 ;; Repo: folke/which-key.nvim
 
-(import-macros {: nnoremap! : xnoremap! : <Cmd>} :my.macros)
+(import-macros {: nmap! : xmap! : <Cmd>} :my.macros)
 
 ;; Show all the mappings.
-(nnoremap! :<C-S-Space> (<Cmd> :WhichKey))
-(xnoremap! :<C-S-Space> (<Cmd> "WhichKey '' v"))
+(nmap! :<C-S-Space> (<Cmd> :WhichKey))
+(xmap! :<C-S-Space> (<Cmd> "WhichKey '' v"))

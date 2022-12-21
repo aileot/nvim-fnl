@@ -1,3 +1,6 @@
+;; TOML: appearance.toml
+;; Repo: rebelot/heirline.nvim
+
 (import-macros {: str? : nil? : seq?} :my.macros)
 
 (local {: compact} (require :my.utils))

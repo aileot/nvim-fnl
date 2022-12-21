@@ -1,4 +1,4 @@
-(import-macros {: str->keycodes : g! : setglobal!} :my.macros)
+(import-macros {: str->keycodes : g! : set!} :my.macros)
 
 ;; Disable default mappings defined in $VIMRUNTIME/ftplugin/*.vim and
 ;; $VIMRUNTIME/pack/dist/opt/**.vim
@@ -10,101 +10,95 @@
 (g! :mapleader (str->keycodes :<Ignore>))
 (g! :maplocalleader (str->keycodes :<Ignore>))
 
-(setglobal! :packPath "")
-
-(setglobal! :mouse :ar)
-(setglobal! :secure true)
+(set! :mouse :ar)
+(set! :secure true)
 
 ;; Note: Larger &modelines could consider unexpected lines modelines, typically in
 ;; snippet files.
-(setglobal! :modelines 1)
+(set! :modelines 1)
 
 ;; Update swap file by &updatetime. Keep it shorter for CursorHold/CursorHoldI
-(setglobal! :updateTime 300)
+(set! :updateTime 300)
 ;; Key sequence finishes after &timeoutlen in milli second.
-(setglobal! :timeoutLen 1000)
+(set! :timeoutLen 1000)
 
 ;; ;; Some plugins might not work with &autochdir on
-;; (setglobal! :autochdir true)
+;; (set! :autochdir true)
 
-(setglobal! :fixEndOfLine false)
+(set! :fixEndOfLine false)
 
 ;; It only affects quickfix commands like `:cc`, `:copen`, and buffer-splitting
 ;; commands like `:sb`; it doesn't affect `:buffer`, `:vsplit`, and so on.
-(setglobal! :switchBuf [:useopen])
+(set! :switchBuf [:useopen])
 
 ;; Note: Enable either `hidden` or `autowriteall` for seamless editing with fzf
 ;; or similar plugins.
-(setglobal! :hidden true)
-;; (setglobal! :autoWriteAll true)
+(set! :hidden true)
+;; (set! :autoWriteAll true)
+
+(set! :cpOptions+ :E)
 
 ;; Save & Restore ///1
-(setglobal! :shada [;; `'`: Save jumplist and changelist
-                    "'1000"
-                    ;; `<`: Max number of lines for register
-                    :<50
-                    ;;   `h`: Disable 'hlsearch' after loading the shada
-                    :h
-                    :s10])
+(set! :shada [;; `'`: Save jumplist and changelist
+              "'500"
+              ;; `<`: Max number of lines for register
+              :<50
+              ;;   `h`: Disable 'hlsearch' after loading the shada
+              :h
+              :s10])
 
-(setglobal! :viewOptions [:folds :cursor])
+(set! :viewOptions [:folds :cursor])
 
-(setglobal! :sessionOptions [:blank
-                             :help
-                             :resize
-                             :tabpages
-                             :winpos
-                             :winsize
-                             :terminal])
+(set! :sessionOptions [:blank
+                       :help
+                       :resize
+                       :tabpages
+                       :winpos
+                       :winsize
+                       :terminal])
 
 ;; Grep ///1
 ;; Ref: https://ktrysmt.github.io/blog/finish-work-early-with-cli-made-by-rust/
 (when (= 1 (vim.fn.executable :rg))
-  (setglobal! :grepPrg "rg --vimgrep --no-heading"))
+  (set! :grepPrg "rg --vimgrep --no-heading"))
 
-(setglobal! :grepFormat "%f:%l:%c:%m,%f:%l:%m")
+(set! :grepFormat "%f:%l:%c:%m,%f:%l:%m")
 
 ;; Error ///1
-(setglobal! :bellOff :all)
-(setglobal! :errorBells true)
-(setglobal! :visualBell true)
+(set! :bellOff :all)
+(set! :errorBells true)
+(set! :visualBell true)
 
 ;; Fold ///1
-(setglobal! :foldEnable false)
+(set! :foldEnable false)
 ;; Close fold when cursor moves out of foldable line if &foldclose is "all".
-;; (setglobal! :foldMethod :indent)
-;; (setglobal! :foldMarker "///,//<")
+;; (set! :foldMethod :indent)
+;; (set! :foldMarker "///,//<")
 ;; ;; Note: &foldlevel instead is local to window.
-;; (setglobal! :foldLevelStart 1)
-(setglobal! :foldNestMax 5)
-;; (setglobal! :foldClose "all")
-(setglobal! :foldOpen [:hor
-                       :insert
-                       :mark
-                       :percent
-                       :quickfix
-                       :search
-                       :tag
-                       :undo])
+;; (set! :foldLevelStart 1)
+(set! :foldNestMax 5)
+;; (set! :foldClose "all")
 
-;; (setglobal! :imDisable true)
-(setglobal! :imInsert 0)
-(setglobal! :imSearch 0)
-(setglobal! :imCmdline true)
+(set! :foldOpen ;
+      [:hor :insert :mark :percent :quickfix :search :tag :undo])
 
-(setglobal! :fileFormats [:unix :dos :mac])
+;; (set! :imDisable true)
+(set! :imInsert 0)
+(set! :imSearch 0)
+(set! :imCmdline true)
+
+(set! :fileFormats [:unix :dos :mac])
 
 (let [in-wsl? vim.env.WSL_DISTRO_NAME]
   (when in-wsl?
     (g! :clipboard {:name "WSL Clipboard"
-                          :copy {:+ [:clip.exe] :* [:clip.exe]}
-                          :paste {:+ [:nvim_paste_on_wsl]
-                                  :* [:nvim_paste_on_wsl]}
-                          :cache_enabled true})))
+                    :copy {:+ [:clip.exe] :* [:clip.exe]}
+                    :paste {:+ [:nvim_paste_on_wsl] :* [:nvim_paste_on_wsl]}
+                    :cache_enabled true})))
 
 ;; Diagnostic ///1
-(setglobal! :spellLang "en_us,cjk")
-(setglobal! :spellOptions "camel")
+(set! :spellLang "en_us,cjk")
+(set! :spellOptions "camel")
 
 (vim.diagnostic.config {:virtual_text {:source :if_many}
                         :float {:wrap false

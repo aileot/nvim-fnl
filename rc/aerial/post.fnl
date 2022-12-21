@@ -1,17 +1,17 @@
 ;; TOML: browse.toml
 ;; Repo: stevearc/aerial.nvim
 
-(import-macros {: nnoremap! : <Cmd>} :my.macros)
+(import-macros {: nmap! : <Cmd>} :my.macros)
 
 (local aerial (require :aerial))
 
 (local update_delay 400)
 (aerial.setup {:backends [:lsp :treesitter :markdown :man]
                :on_attach (comment (fn [bufnr]
-                                     (nnoremap! [:buffer bufnr] "{"
-                                                (<Cmd> :AerialPrev))
-                                     (nnoremap! [:buffer bufnr] "}"
-                                                (<Cmd> :AerialNext))))
+                                     (nmap! [:buffer bufnr] "{"
+                                            (<Cmd> :AerialPrev))
+                                     (nmap! [:buffer bufnr] "}"
+                                            (<Cmd> :AerialNext))))
                :layout {:max_width [60 0.2]
                         :default_direction :right
                         ;; edge|window

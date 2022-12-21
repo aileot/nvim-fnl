@@ -1,26 +1,20 @@
-(import-macros {: augroup! : au!} :my.macros)
-
 (vim.cmd "
-runtime rc/loaded.vim
 runtime! mappings/*.vim
 runtime lazy/init.vim
 runtime once/init.vim
 ")
 
-(require :after-plugins.augroups)
-(require :after-plugins.colorscheme)
-(require :after-plugins.startpage)
+(require :my.lazy.augroups)
+(require :my.lazy.colorscheme)
+(require :my.lazy.startpage)
 (require :after-plugins.findpath)
 (require :after-plugins.backup-files)
-
-(require :my.lazy.nmaps)
+(require :my.lazy.viewer-mode)
 (require :my.lazy.filetypes)
-
-(augroup! :afterVimEnter/LoadOnce
-          (au! :OptionSet [:diff] [:once] #(require :my.lazy.diff))
-          (au! :ModeChanged ["*:*[vV\022]"] [:once] #(require :my.lazy.xmaps))
-          (au! :ModeChanged ["*:*[ovV\022]"] [:once] #(require :my.lazy.omaps))
-          (au! :CmdLineEnter [:once] #(require :my.lazy.cmaps))
-          (au! [:CmdLineEnter :CmdWinEnter]
-               [:once :desc "Define additional user commands"] ;
-               #(vim.schedule #(require :my.lazy.commands))))
+(require :my.lazy.diff)
+(require :my.lazy.nmaps)
+(require :my.lazy.imaps)
+(require :my.lazy.cmaps)
+(require :my.lazy.tmaps)
+(require :my.lazy.textobj-maps)
+(require :my.lazy.commands)

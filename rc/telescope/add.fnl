@@ -1,43 +1,69 @@
 ;; TOML: telescope.toml
 ;; Repo: nvim-telescope/telescope.nvim
 
-(import-macros {: noremap-operator! : <Cmd> : expand} :my.macros)
+(import-macros {: nmap! : <Cmd> : expand} :my.macros)
 
-(local normalize vim.fs.normalize)
+(local {: find-root} (require :my.utils))
 
-(noremap-operator! :<Space>Z (<Cmd> :Telescope))
-(noremap-operator! :<Space>z<CR> (<Cmd> "Telescope resume"))
+(nmap! :<Space>Z (<Cmd> :Telescope))
+(nmap! :<Space>z<CR> (<Cmd> "Telescope resume"))
 
-(noremap-operator! :<Space>zb (<Cmd> "Telescope buffers"))
-(noremap-operator! :<Space>zo (<Cmd> "Telescope oldfiles"))
+(nmap! :<Space>zb (<Cmd> "Telescope buffers"))
+(nmap! :<Space>zo (<Cmd> "Telescope oldfiles"))
 
-(noremap-operator! :<Space>zg (<Cmd> "Telescope git_files"))
-(noremap-operator! :<Space>zl (<Cmd> "Telescope git_bcommits"))
-(noremap-operator! :<Space>zL (<Cmd> "Telescope git_commits"))
+(nmap! :<Space>zq (<Cmd> "Telescope quickfix"))
+(nmap! :<Space>zQ (<Cmd> "Telescope quickfixhistory"))
 
-(noremap-operator! :<Space>zh (<Cmd> "Telescope help_tags"))
-(noremap-operator! :<Space>zm (<Cmd> "Telescope man_pages"))
+(nmap! :<Space>zh (<Cmd> "Telescope help_tags"))
+(nmap! :<Space>zm (<Cmd> "Telescope man_pages"))
 
-(noremap-operator! :<Space>zc (<Cmd> "Telescope commands"))
-(noremap-operator! :<Space>za (<Cmd> "Telescope autocommands"))
-(noremap-operator! :<Space>zH (<Cmd> "Telescope highlights"))
+(nmap! :<Space>zc (<Cmd> "Telescope commands"))
+(nmap! :<Space>za (<Cmd> "Telescope autocommands"))
+(nmap! :<Space>zH (<Cmd> "Telescope highlights"))
 
-(noremap-operator! "<Space>z:" (<Cmd> "Telescope command_history"))
-(noremap-operator! :<Space>z/ (<Cmd> "Telescope current_buffer_fuzzy_find"))
+(nmap! "<Space>z:" (<Cmd> "Telescope command_history"))
+(nmap! :<Space>z/ (<Cmd> "Telescope current_buffer_fuzzy_find"))
 
-(noremap-operator! "<Space>z\"" (<Cmd> "Telescope registers"))
+(nmap! "<Space>z\"" (<Cmd> "Telescope registers"))
+
+(lambda git-source [name ?opts]
+  (let [{name source} (require :telescope.builtin)
+        default-opts {:cwd (vim.fn.expand "%:h") :initial_mode :normal}
+        opts (if ?opts (vim.tbl_extend :force default-opts ?opts) ;
+                 default-opts)]
+    (source opts)))
+
+(nmap! :<Space>zgf [:desc "[telescope] git-files"]
+       #(git-source :git_files {:initial_mode :insert}))
+
+(nmap! :<Space>zgc [:desc "[telescope] git-commits"] #(git-source :git_commits))
+
+(nmap! :<Space>zgC [:desc "[telescope] git-commits for current buffer"]
+       #(git-source :git_bcommits))
+
+;; Mnemonic: "y" looks like a branch of tree.
+
+(nmap! :<Space>zgy [:desc "[telescope] git-branches"]
+       #(git-source :git_branches))
+
+(nmap! :<Space>zgs [:desc "[telescope] git-stash"] #(git-source :git_stash))
 
 ;; Mappings ///1
 (fn keymap-wrapper [opts]
   (let [{: keymaps} (require :telescope.builtin)]
     (keymaps opts)))
 
-(noremap-operator! :<Space>zN #(keymap-wrapper {:modes [:n]}))
-(noremap-operator! :<Space>zI #(keymap-wrapper {:modes [:i]}))
-(noremap-operator! :<Space>zC #(keymap-wrapper {:modes [:c]}))
-(noremap-operator! :<Space>zX #(keymap-wrapper {:modes [:x]}))
-(noremap-operator! :<Space>zS #(keymap-wrapper {:modes [:s]}))
-(noremap-operator! :<Space>zT #(keymap-wrapper {:modes [:t]}))
+(nmap! :<Space>zN [:desc "[telescope] Nmaps"] #(keymap-wrapper {:modes [:n]}))
+
+(nmap! :<Space>zI [:desc "[telescope] Imaps"] #(keymap-wrapper {:modes [:i]}))
+
+(nmap! :<Space>zC [:desc "[telescope] Cmaps"] #(keymap-wrapper {:modes [:c]}))
+
+(nmap! :<Space>zX [:desc "[telescope] Xmaps"] #(keymap-wrapper {:modes [:x]}))
+
+(nmap! :<Space>zS [:desc "[telescope] Smaps"] #(keymap-wrapper {:modes [:s]}))
+
+(nmap! :<Space>zT [:desc "[telescope] Tmaps"] #(keymap-wrapper {:modes [:t]}))
 
 ;; Find/Grep ///1
 (fn fd-wrapper [extra-opts]
@@ -54,68 +80,52 @@
         {: grep_string} (require :telescope.builtin)]
     (grep_string opts)))
 
-(lambda find-root [path]
-  (let [root-markers [:.git]
-        root-patterns [(vim.fn.stdpath :config)
-                       (vim.fn.stdpath :cache)
-                       (vim.fn.stdpath :data)
-                       (vim.fn.stdpath :state)
-                       (normalize :$XDG_CONFIG_HOME)
-                       (normalize :$XDG_CACHE_HOME)
-                       (normalize :$XDG_DATA_HOME)
-                       (normalize :$XDG_STATE_HOME)
-                       (normalize :$VIMRUMTIME)]
-        first-root-marker-dir (-> (vim.fs.find root-markers
-                                               {: path :upward true})
-                                  (. 1)
-                                  (vim.fs.dirname))
-        first-root-pattern (-> (vim.fs.find root-patterns
-                                            {: path
-                                             :upward true
-                                             :type :directory})
-                               (. 1))
-        only-one? (or first-root-marker-dir first-root-pattern)]
-    (or only-one? ;
-        (if (< (length first-root-marker-dir) (length first-root-pattern))
-            first-root-pattern
-            first-root-marker-dir))))
+;; Keymap: fd ///1
 
-(noremap-operator! :<Space>zv ;
-                   #(fd-wrapper {:search_dirs [(normalize :$XDG_CONFIG_HOME/nvim)]}))
+(nmap! :<Space>zv [:desc "[telescope] paths of nvimrc"]
+       #(fd-wrapper {:search_dirs [(expand :$XDG_CONFIG_HOME/nvim)]}))
 
-(noremap-operator! :<Space>z. ;
-                   #(fd-wrapper {:search_dirs [(normalize :$DOTFILES_HOME)]}))
+(nmap! :<Space>z. [:desc "[telescope] paths of dotfiles"]
+       #(fd-wrapper {:search_dirs [(expand :$DOTFILES_HOME)]}))
 
-(noremap-operator! :<Space>ze ;
-                   #(fd-wrapper {:search_dirs [:/etc :/usr/share]}))
+(nmap! :<Space>zl [:desc "[telescope] paths of $NVIM_LOCAL_HOME"]
+       #(fd-wrapper {:search_dirs [(expand :$NVIM_LOCAL_HOME)]}))
 
-(noremap-operator! :<Space>zr ;
-                   #(fd-wrapper {:search_dirs [(normalize :$VIMRUNTIME)]}))
+(nmap! :<Space>ze [:desc "[telescope] paths of /usr/share"]
+       #(fd-wrapper {:search_dirs [:/etc :/usr/share]}))
 
-(noremap-operator! :<Space>zq ;
-                   #(fd-wrapper {:search_dirs [(normalize :$GHQ_ROOT)]}))
+(nmap! :<Space>zr [:desc "[telescope] paths of $VIMRUNTIME"]
+       #(fd-wrapper {:search_dirs [(expand :$VIMRUNTIME)]}))
 
-(noremap-operator! ["Search through plugin installed directories"] :<Space>zp ;
-                   #(fd-wrapper {:search_dirs [(normalize :$DEIN_CACHE_HOME)
-                                               (normalize :$XDG_DATA_HOME/nvim/site/pack)]}))
+(nmap! :<Space>zq [:desc "[telescope] paths of $GHQ_ROOT"]
+       #(fd-wrapper {:search_dirs [(expand :$GHQ_ROOT)]}))
 
-(noremap-operator! :<Space>z<BS> ;
-                   #(fd-wrapper {:search_dirs [(normalize :$XDG_DATA_HOME/Trash)]}))
+(nmap! :<Space>zp [:desc "[telescope] paths of plugins"]
+       #(fd-wrapper {:search_dirs [(expand :$DEIN_CACHE_HOME)
+                                   (expand :$XDG_DATA_HOME/nvim/site/pack)]}))
 
-(noremap-operator! :<Space>z<Space> ;
-                   #(fd-wrapper {:search_dirs [(find-root (expand "%:p"))]}))
+(nmap! :<Space>z<BS> [:desc "[telescope] paths of trashes"]
+       #(fd-wrapper {:search_dirs [(expand :$XDG_DATA_HOME/Trash)]}))
 
-(noremap-operator! :<Space>rv ;
-                   #(grep-wrapper {:search_dirs [(normalize :$XDG_CONFIG_HOME/nvim)]}))
+(nmap! :<Space>z<Space> [:desc "[telescope] paths of current project"]
+       #(fd-wrapper {:search_dirs [(find-root (expand "%:p"))]}))
 
-(noremap-operator! :<Space>rr ;
-                   #(grep-wrapper {:search_dirs [(normalize :$VIMRUNTIME)]}))
+;; Keymap: rg ///1
 
-(noremap-operator! :<Space>r. ;
-                   #(grep-wrapper {:search_dirs [(normalize :$DOTFILES_HOME)]}))
+(nmap! :<Space>rv [:desc "[telescope] grep files in nvimrc"]
+       #(grep-wrapper {:search_dirs [(expand :$XDG_CONFIG_HOME/nvim)]}))
 
-(noremap-operator! :<Space>zr ;
-                   #(grep-wrapper {:search_dirs [(normalize :$VIMRUNTIME)]}))
+(nmap! :<Space>r. [:desc "[telescope] grep files in dotfiles"]
+       #(grep-wrapper {:search_dirs [(expand :$DOTFILES_HOME)]}))
 
-(noremap-operator! :<Space>r<Space> ;
-                   #(grep-wrapper {:search_dirs [(find-root (expand "%:p"))]}))
+(nmap! :<Space>rl [:desc "[telescope] grep files in $NVIM_LOCAL_HOME"]
+       #(grep-wrapper {:search_dirs [(expand :$NVIM_LOCAL_HOME)]}))
+
+(nmap! :<Space>rr [:desc "[telescope] grep files in $VIMRUNTIME"]
+       #(grep-wrapper {:search_dirs [(expand :$VIMRUNTIME)]}))
+
+(nmap! :<Space>rq [:desc "[telescope] grep files in $GHQ_ROOT"]
+       #(grep-wrapper {:search_dirs [(expand :$GHQ_ROOT)]}))
+
+(nmap! :<Space>r<Space> [:desc "[telescope] grep files in current project"]
+       #(grep-wrapper {:search_dirs [(find-root (expand "%:p"))]}))

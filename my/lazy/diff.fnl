@@ -1,31 +1,30 @@
-(import-macros {: printf : augroup! : au! : setglobal! : nnoremap! : has?}
-               :my.macros)
+(import-macros {: printf : augroup! : au! : set! : nmap! : has?} :my.macros)
 ;; cspell:ignoreRegExp :i[a-z]+
 
-(setglobal! :diffOpt [:filler
-                      :vertical
-                      :closeoff
-                      :hiddenoff
-                      "foldcolumn:0"
-                      :followwrap
-                      :internal
-                      :indent-heuristic
-                      "algorithm:histogram"])
+(set! :diffOpt [:filler
+                :vertical
+                :closeoff
+                :hiddenoff
+                "foldcolumn:0"
+                :followwrap
+                :internal
+                :indent-heuristic
+                "algorithm:histogram"])
 
 (when (has? :nvim-0.9.0)
-  (setglobal! :diffOpt+ "linematch:60"))
+  (set! :diffOpt+ "linematch:60"))
 
-(nnoremap! :<Space>odx [:desc "[diff] Toggle diff detection exactness"]
-           #(let [simpler-opts [:iblank :icase :iwhiteall]
-                  simpler-diff? (vim.go.diffopt:match :iwhite)
-                  msg (printf "[diff] detection becomes %s"
-                              (if simpler-diff? "more rigorous" :simpler))]
-              (vim.notify msg)
-              (if simpler-diff?
-                  (setglobal! :diffOpt- simpler-opts)
-                  (setglobal! :diffOpt+ simpler-opts))))
+(nmap! :<Space>odx [:desc "[diff] Toggle diff detection exactness"]
+       #(let [simpler-opts [:iblank :icase :iwhiteall]
+              simpler-diff? (vim.go.diffopt:match :iwhite)
+              msg (printf "[diff] detection becomes %s"
+                          (if simpler-diff? "more rigorous" :simpler))]
+          (vim.notify msg)
+          (if simpler-diff?
+              (set! :diffOpt- simpler-opts)
+              (set! :diffOpt+ simpler-opts))))
 
-(augroup! :myLazy/Diff
+(augroup! :myLazyDiff
   (au! [:InsertLeave :BufWritePost] [:desc "Update diff automatically"]
        #(when vim.wo.diff
-          vim.cmd.diffupdate)))
+          (vim.cmd.diffupdate))))

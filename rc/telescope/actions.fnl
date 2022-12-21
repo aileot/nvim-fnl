@@ -35,7 +35,7 @@
                                 s)))))]
               (if entry.bufnr
                   (let [command (if (= i 1) :buffer (. edit-buf-cmd-map method))]
-                    (when-not (?. vim.b entry.bufnr :buflisted)
+                    (when-not (. vim.b entry.bufnr :buflisted)
                               (tset vim.b entry.bufnr :buflisted true)
                               (pcall (. vim.cmd command)
                                      (vim.api.nvim_buf_get_name entry.bufnr))))

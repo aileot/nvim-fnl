@@ -1,4 +1,4 @@
-(import-macros {: setglobal! : setlocal! : augroup! : au!} :my.macros)
+(import-macros {: set! : setlocal! : augroup! : au!} :my.macros)
 
 ;; (lambda locate-data-dir [name]
 ;;   ;; Ensure to expand environment variable.
@@ -13,42 +13,40 @@
 ;;                     (vim.notify :abort))))
 ;;     dir))
 
-(setglobal! :undoFile true)
-(setglobal! :swapFile false)
-(setglobal! :writeBackup true)
+(set! :undoFile true)
+(set! :swapFile false)
+(set! :writeBackup true)
 ;; Note: Persistent data is saved to $XDG_STATE_HOME/nvim/ by default with
 ;; reasonable default paths.
 ;; https://github.com/neovim/neovim/pull/15583
-;; (setglobal! :undoDir (locate-data-dir :/undo/))
-;; (setglobal! :directory (locate-data-dir :/swap//))
-;; (setglobal! :backupDir (locate-data-dir :/backup//))
+;; (set! :undoDir (locate-data-dir :/undo/))
+;; (set! :directory (locate-data-dir :/swap//))
+;; (set! :backupDir (locate-data-dir :/backup//))
 ;; Note: 'backupskip' accepts no `{}` pattern: with them in it,
 ;; `E220: Missing }` will be thrown on BufWrite.
-(setglobal! :backupSkip "*/tmp/*,*/.git/*,*/node_module/*")
-;; (setglobal! :backupCopy "yes") ;; (default: "auto")
-;; (setglobal! :backupExt "") ;; (default: "~")
+(set! :backupSkip "*.log,*/tmp/*,*/.git/*,*/node_module/*")
+;; (set! :backupCopy "yes") ;; (default: "auto")
+;; (set! :backupExt "") ;; (default: "~")
 
 (do
-  (fn enable-swapfile-on-change []
-    (au! :myBackupFiles/ToggleSwapfile
-         [:TextChanged :TextChangedI :TextChangedP]
-         [:<buffer> :once :desc "Enable swapfile on any change"]
+  (lambda enable-swapfile-on-change [{: group : buf}]
+    (au! group [:TextChanged :TextChangedI :TextChangedP]
+         [:buffer buf :once :desc "Enable swapfile on any change"]
          "silent! setlocal swapfile"))
-  (fn remove-swapfile []
-    (when (and vim.bo.swapfile (not vim.bo.modified))
-      ;; Note: swapfile is removed when &swapfile becomes false.
-      (setlocal! :swapFile false)
-      (enable-swapfile-on-change)))
+  (let [group (augroup! :myBackupFilesToggleSwapfile)]
+    (au! group :BufReadPost [:desc "Enable swapfile on change"]
+         `enable-swapfile-on-change)
+    (au! group :BufWritePost [:desc "Remove swapfile"]
+         #(when (and vim.bo.swapfile (not vim.bo.modified))
+            ;; Note: swapfile is removed when &swapfile becomes false.
+            (setlocal! :swapFile false)
+            enable-swapfile-on-change))))
 
-  (augroup! :myBackupFiles/ToggleSwapfile ;
-            (au! :BufWritePost remove-swapfile)
-            (au! :BufRead enable-swapfile-on-change)))
-
-;; (augroup! :myBackupFiles/RecoverBackup
+;; (augroup! :myBackupFilesRecoverBackup
 ;;           (au! :BufWinEnter "*/.git/{config,hooks/*}"
 ;;             (setlocal! :backupskip "*/{tmp,.git,node_module}/*")))
 
-;; (augroup! :myBackupFiles/KeepUndofilesAwayFromBufferList
+;; (augroup! :myBackupFilesKeepUndofilesAwayFromBufferList
 ;;   (au! :BufWinEnter [(: (.. vim.go.undodir "/*") :gsub "/+" "/")]
 ;;        [:desc "Don't add undo files to the buffer list."]
 ;;        "setlocal bufhidden=wipe"))

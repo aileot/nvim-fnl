@@ -3,6 +3,14 @@
 
 (local {: setup} (require :actions-preview))
 
+(local lsp (require :my.lsp))
+
+(set lsp.code-actions #(let [{: code_actions} (require :actions-preview)]
+                         (code_actions)))
+
+(set lsp.range-code-actions #(let [{: code_actions} (require :actions-preview)]
+                               (code_actions)))
+
 (setup {:diff {;; Note: Action is supposed to make rather small difference.
                :algorithm :patience
                :ignore_whitespace true}

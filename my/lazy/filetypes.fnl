@@ -1,6 +1,9 @@
 (import-macros {: nil?} :my.macros)
 
-(lambda fallback [path _bufnr _ext]
+(lambda fallback [path _bufnr _matched]
+  "Fallback to check filetype through `path` backwards.
+  - /path/to/foo.vim.bk -> vim
+  - /path/to/lua/foobar -> lua"
   (var ?rest-path path)
   (var ?filetype nil)
   (let [pat-preceding "^(.+)[./\\]"

@@ -1,14 +1,12 @@
 ;; TOML: default.toml
 ;; Repo: notomo/cmdbuf.nvim
 
-(import-macros {: setlocal! : augroup! : au! : nnoremap! : expand} :my.macros)
+(import-macros {: setlocal! : augroup! : au! : nmap! : expand} :my.macros)
 
 (local cmdbuf (require :cmdbuf))
 
 (fn set-cmdbuf-options! []
-  (setlocal! :bufhidden :wipe)
-  (augroup! :rcCmdbufCloseOnLeave
-    (au! :WinLeave [:<buffer>] :quit)))
+  (setlocal! :bufhidden :wipe))
 
 (fn execute-and-exit! []
   (cmdbuf.execute)
@@ -16,18 +14,20 @@
     (vim.cmd.quit)))
 
 (fn set-cmdbuf-mappings! []
-  (nnoremap! [:<buffer>] ":" ":")
-  (nnoremap! [:<buffer>] "/" "/")
-  (nnoremap! [:<buffer>] "?" "?")
-  (nnoremap! [:<buffer>] :dd cmdbuf.delete)
-  (nnoremap! [:<buffer>] :cc
-             #(do
-                (cmdbuf.delete)
-                (vim.cmd "normal! i")))
-  (nnoremap! [:<buffer>] :<CR> execute-and-exit!)
-  (nnoremap! [:<buffer>] :ZZ execute-and-exit!))
+  (nmap! [:<buffer>] ":" ":")
+  (nmap! [:<buffer>] "/" "/")
+  (nmap! [:<buffer>] "?" "?")
+  (nmap! [:<buffer>] :dd `cmdbuf.delete)
+  (nmap! [:<buffer>] :cc #(do
+                            (cmdbuf.delete)
+                            (vim.cmd "normal! i")))
+  (nmap! [:<buffer>] :<CR> `execute-and-exit!)
+  (nmap! [:<buffer>] :ZZ `execute-and-exit!))
 
-(augroup! :rcCmdbufSetupOnEntry
-  (au! :User [:CmdbufNew] #(do
-                             (set-cmdbuf-options!)
-                             (set-cmdbuf-mappings!))))
+(augroup! :rcCmdbufPost
+  (au! :User [:CmdbufNew] [:desc "[cmdbuf] Set up local options"]
+       #(do
+          (set-cmdbuf-options!)
+          (set-cmdbuf-mappings!)
+          (augroup! :rcCmdbufCloseOnLeave
+            (au! :WinLeave [:buffer $.buf] :quit)))))

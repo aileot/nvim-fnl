@@ -7,15 +7,28 @@
 
 (local {: setup} (require :catppuccin))
 
-(set vim.g.catppuccin_flavour :frappe)
+(local flavour ;; (->darker :latte :frappe :macchiato :mocha)
+       :frappe)
 
-(setup {:compile_path (expand :$NVIM_CACHE_HOME/catppuccin)
+(local palette {:background "#334152"
+                :comment "#8d9eb2"
+                :signcolumn-foreground "#fffeeb"})
+
+(setup {: flavour
+        :compile_path (expand :$NVIM_CACHE_HOME/catppuccin)
         ;; Enable `g:terminal_color_1` kind variables
-        :term_colors true
+        :term_colors (not vim.g.termguicolors)
         :dim_inactive {:enable true :shade :dark :percentage 0.15}
         :styles {:comments [:italic]}
-        :color_overrides []
-        :custom_highlights []
+        ;; color palette of spring-night:
+        ;;    rhysd/vim-color-spring-night/gen/src/main.rs
+        ;; color palette of catppuccin-frappe:
+        ;;    catppuccin/nvim/lua/catppuccin/palettes/frappe.lua
+        ;; :color_overrides {flavour {:base palette.background
+        ;;                            :mantle "#3a4b5c"
+        ;;                            :crust "#435060"
+        ;;                            :surface2 palette.comment}}
+        :custom_highlights {}
         :integrations {:gitsigns true
                        :leap true
                        :markdown true
