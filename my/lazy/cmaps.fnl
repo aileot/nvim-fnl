@@ -1,28 +1,28 @@
-(import-macros {: dec : cmap!} :my.macros)
+(import-macros {: cmap! : vim/visualized} :my.macros)
 
 (pcall #(cmap! [:unique :expr] :<C-p> "wildmenumode() ? '<Left>' : '<Up>'"))
 (pcall #(cmap! [:unique :expr] :<C-n> "wildmenumode() ? '<Right>' : '<Down>'"))
 
-(cmap! :<C-r><C-v> [:desc "Paste Visualized" :expr]
-       #(-> (vim.fn.getline :v)
-            (: :sub (dec (vim.fn.col "'<")) (dec (vim.fn.col "'>")))))
+(cmap! :<C-r><C-v> [:desc "Paste Visualized" :expr] #(vim/visualized))
 
-;; Open CmdWin
-(cmap! :<M-i> :<C-f>i)
-(cmap! :<M-a> :<C-f>a)
-(cmap! :<M-I> :<C-f>I)
-(cmap! :<M-A> :<C-f>A)
+(cmap! :<S-Space> :<Space><Left>)
 
 ;; Stop Cmdline mode
 (cmap! :<M-h> :<C-c>)
 (cmap! :<M-k> :<C-c>)
 (cmap! :<M-l> :<C-c>)
 
+(cmap! :<M-i> :<Space><BS><Left>)
+(cmap! :<M-a> :<Space><BS><Right>)
+(cmap! :<M-S-I> :<Home>)
+(cmap! :<M-S-A> :<End>)
+
 (cmap! :<C-a> :<Home>)
 (cmap! :<M-f> :<S-Right>)
 (cmap! :<M-b> :<S-Left>)
 
 ;; `<Space><BS>` matters if wildmenumode() returns true.
+
 (cmap! :<C-f> :<Space><BS><Right>)
 (cmap! :<C-b> :<Space><BS><Left>)
 

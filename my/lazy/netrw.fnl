@@ -24,9 +24,9 @@
       (doautocmd! event {:group :Network :pattern file}))
     (au! id [:BufWriteCmd :FileWriteCmd]
          ["{file,ftp,rcp,scp,dav,davs,rsync,sftp,http}://*"]
-         `enable-network-autocmds)
+         enable-network-autocmds)
     (au! id [:BufReadCmd :FileReadCmd :SourceCmd]
          ["{file,ftp,rcp,scp,dav,davs,rsync,sftp,http,https}://*"]
-         `enable-network-autocmds)))
+         enable-network-autocmds)))
 
 {: disable-netrw : idle-network-autocmds}

@@ -1,4 +1,7 @@
 (import-macros {: printf
+                : if-not
+                : file-readable?
+                : expand
                 : nmap!
                 : omni-map!
                 : motion-map!
@@ -6,6 +9,8 @@
                 : setglobal!
                 : au!
                 : echo!} :my.macros)
+
+(local {: contains?} (require :my.utils))
 
 (pcall #(omni-map! [:unique :remap] :<C-h> :<BS>))
 
@@ -17,17 +22,13 @@
   (nmap! :<Space>ev (<Cmd> select-recent-vimrcs))
   (nmap! :<Space>zv (<Cmd> select-recent-vimrcs)))
 
-;; Disable ///1
-(nmap! :q :<Nop>)
-(nmap! :Q :<Nop>)
-
 ;; Macro ///1
 (nmap! [:expr :desc "Toggle macro recording"] :<S-CR>
        ;; Note: autocmd to notify on RecordingEnter/Leave instead is useless.
        #(let [register (vim.fn.reg_recording)
               start-recording? (= "" register)
               msg (if start-recording? "[macro] recording register:"
-                      (printf "[macro] recorded to \"%s\"" register))]
+                      (printf "[macro] recorded to %q" register))]
           (if start-recording?
               (echo! msg)
               (vim.schedule #(echo! msg)))
@@ -55,6 +56,11 @@
 (motion-map! [:expr :literal] :g$ "&wrap ? '$' : 'g$'")
 
 (nmap! [:desc "Sync file if modified, or write"] :<Space>w
-       #(if vim.bo.modified
+       #(when (contains? ["" :acwrite] vim.bo.buftype)
+          (if-not (file-readable? (expand "%"))
+            ;; Note: For some special buffer where BufWriteCmd triggers
+            ;; something.
+            (vim.cmd.write)
+            vim.bo.modified
             (vim.cmd.update)
-            (vim.cmd.checktime)))
+            (vim.cmd.checktime))))

@@ -1,4 +1,4 @@
-;; Import ///1
+;;; Import ///1
 ;; This macro by-pass might not work with `compilerEnv = _G`.
 ;; Related Commits:
 ;; - Fix a bug where disabling the compiler sandbox broke module require
@@ -18,6 +18,8 @@
 ;;   https://github.com/rktjmp/hotpot.nvim/issues/77
 ;; - Issues with loading macros
 ;;   https://github.com/Olical/aniseed/issues/128
+
+(local {: contains? : str? : fn? : even?} (require :my.utils.predicate))
 
 (local {: set!
         : setlocal!
@@ -43,53 +45,52 @@
         : feedkeys!
         : highlight!} (require :nvim-laurel.macros))
 
-(lambda contains? [xs ?a]
-  "Check if `?a` is in `xs`."
-  (accumulate [eq? false ;
-               _ x (ipairs xs) ;
-               &until eq?]
-    (= ?a x)))
+;;; Predicate ;;; 1
 
-;; Predicate ///1
+(fn nil?* [x]
+  "Check if `x` is nil."
+  `(= ,x nil))
 
-(fn nil? [x]
-  "Check if value of 'x' is nil."
-  `(= nil ,x))
+(fn bool?* [x]
+  "Check if `x` is boolean."
+  `(= (type ,x) :boolean))
 
-(fn bool? [x]
-  "Check if 'x' is of boolean type."
-  `(= :boolean (type ,x)))
+(fn true?* [x]
+  `(= (type ,x) true))
 
-(fn str? [x]
-  "Check if `x` is of string type."
-  `(= :string (type ,x)))
+(fn false?* [x]
+  `(= (type ,x) false))
 
-(fn fn? [x]
-  "(Runtime time) Check if type of `x` is function."
-  `(= :function (type ,x)))
+(fn str?* [x]
+  "Check if `x` is string."
+  `(= (type ,x) :string))
 
-(fn num? [x]
-  "Check if 'x' is of number type."
-  `(= :number (type ,x)))
+(fn fn?* [x]
+  "(Runtime time) Check if `x` is function."
+  `(= (type ,x) :function))
 
-(fn seq? [x]
-  "Check if `x` is a sequence."
-  `(not (nil? (. ,x 1))))
+(fn num?* [x]
+  "Check if `x` is number."
+  `(= (type ,x) :number))
 
-(fn tbl? [x]
-  "Check if `x` is of table type.
+(fn seq?* [x]
+  "Check if `x` is sequence."
+  `(not= (. ,x 1) nil))
+
+(fn tbl?* [x]
+  "Check if `x` is table.
   table?, sequence?, etc., is only available in compile time."
   `(= (type ,x) :table))
 
-(fn even? [x]
+(fn even?* [x]
   "Check if `x` is even number."
-  `(and ,(num? x) (= 0 (% ,x 2))))
+  `(and ,(num?* x) (= (% ,x 2) 0)))
 
-(fn odd? [x]
+(fn odd?* [x]
   "Check if `x` is odd number."
-  `(and ,(num? x) (= 1 (% ,x 2))))
+  `(and ,(num?* x) (= (% ,x 2) 1)))
 
-;; String ///1
+;;; String ///1
 
 (lambda printf [str ...]
   `(string.format ,str ,...))
@@ -99,7 +100,7 @@
       `(string.format ,(.. str "\n") ,...)
       `(string.format (.. ,str "\n") ,...)))
 
-;; Number ///1
+;;; Number ///1
 
 (lambda inc [x]
   "Return incremented result"
@@ -111,32 +112,37 @@
 
 (lambda ++ [x]
   "Increment `x` by 1"
+  (assert-compile (sym? x) (.. "expected symbol, got " (type x)) x)
   `(do
-     (set ,x (+ 1 ,x))
+     (set ,x (+ ,x 1))
      ,x))
 
 (lambda -- [x]
   "Decrement `x` by 1"
+  (assert-compile (sym? x) (.. "expected symbol, got " (type x)) x)
   `(do
-     (set ,x (- 1 ,x))
+     (set ,x (- ,x 1))
      ,x))
 
-;; Table ///1
+;;; Table ///1
 
-(lambda first [xs]
+(lambda first* [xs]
   `(. ,xs 1))
 
-(lambda second [xs]
+(lambda second* [xs]
   `(. ,xs 2))
 
-(lambda last [xs]
-  `(. ,xs (length ,xs)))
+(lambda last* [xs]
+  (if (list? xs)
+      (let [xs# xs]
+        `(. xs# (length xs#)))
+      `(. ,xs (length ,xs))))
 
 (lambda join [sep xs]
   "Concatenate bare-string[] with `sep` in compile time."
   (table.concat xs sep))
 
-;; Type Conversion ///1
+;;; Type Conversion ///1
 
 (lambda ->str [x]
   `(tostring ,x))
@@ -170,7 +176,7 @@
       (++ i))
     new-table))
 
-;; Decision ///1
+;;; Decision ///1
 
 (lambda when-not [cond ...]
   `(when (not ,cond)
@@ -218,15 +224,13 @@
     (do
       ...)))
 
-;; File System ///1
+;;; File System ///1
 
 (lambda executable? [x]
-  "Check if `x` is executable command."
-  `(= 1 (vim.fn.executable ,x)))
-
-(lambda directory? [x]
-  "Check if `x` is a directory."
-  `(= 1 (vim.fn.isdirectory ,x)))
+  "Check if `x` is executable command.
+  @param x string
+  @return boolean"
+  `(= (vim.fn.executable ,x) 1))
 
 (lambda mkdir [dir ?flag]
   "Create directory `dir` with `?flag` or \"p\"."
@@ -234,26 +238,60 @@
     `(vim.fn.mkdir ,dir ,flag)))
 
 (lambda expand [path]
-  "Expand special keywords with either vim.fn.expand or vim.fs.normalize."
-  (if (or (sym? path) (list? path)
-          (and (str? path) ;
-               (or (path:match "[%#*:]") (path:match "<%S+>"))))
-      (if (contains? ["%" "%:p"] path)
-          `(-> (vim.api.nvim_get_current_buf)
-               (vim.api.nvim_buf_get_name))
-          `(vim.fn.expand ,path))
-      `(vim.fs.normalize ,path)))
+  `(vim.fn.expand ,path))
 
-;; Vim ///1
+(fn directory? [x]
+  "Check if `x` is a directory.
+  @param x string|nil If `nil`, induced from current buffer.
+  @return boolean"
+  (let [dir (or x (expand "%:h"))]
+    `(= (vim.fn.isdirectory ,dir) 1)))
 
-;; Note: We are unlikely to have these ambiguous, general term functions in our
-;; codes to get conflicted with, like `has?`, `exists?`.
+(fn file-readable? [x]
+  "Check if `x` is a readable file.
+  @param x string|nil If `nil`, check current buffer.
+  @return boolean"
+  (let [file (or x (expand "%"))]
+    `(= (vim.fn.filereadable ,file) 1)))
 
-(lambda has? [x]
-  `(= 1 (vim.fn.has ,x)))
+(fn file-writable? [x]
+  "Check if `x` is a writable file.
+  @param x string|nil If `nil`, check current buffer.
+  @return boolean"
+  (let [file (or x (expand "%"))]
+    `(= (vim.fn.filewritable ,file) 1)))
 
-(lambda exists? [x]
-  `(= 1 (vim.fn.exists ,x)))
+;;; Lua ///1
+
+(lambda evaluate [x ...]
+  "Evaluate function `x` with args `...`.
+  @param x function
+  @param ... any args for `x`
+  @return any"
+  ;; Note: `eval` instead is conflicted with fennel.eval.
+  `(,x ,...))
+
+(lambda for-each [func t]
+  "Apply `func` to each value of `t`.
+  @param func function
+  @param t table
+  @return table"
+  (if (and (fn? func) (or (table? t) (sequence? t)))
+      (collect [k v (pairs t)]
+        (func k v))
+      `(vim.tbl_map ,func ,t)))
+
+(lambda export [func seq]
+  "(Compile time) Export kv-table whose keys are  `t`
+  @param func function
+  @param seq sequence
+  @return kv-table"
+  (assert-compile (sequence? seq) (.. "expected sequence, got " (type seq)) seq)
+  (for-each (fn [_ v]
+              (assert-compile (sym? v) (.. "expected symbol, got " (type v)) v)
+              (values (tostring v) `(,func ,v))) seq))
+
+;;; Vim ///1
 
 (lambda defer [timeout callback]
   `(vim.defer_fn ,callback ,timeout))
@@ -308,19 +346,13 @@
     (augroup! new-name
       ...)))
 
-(fn vim-truthy? [expr]
-  ;; Note: Lua expr is always truthy or falsy, so the prefix `vim-` is probably
-  ;; unnecessary: it's a matter of taste.
-  (if (list? expr)
-      `(let [res# ,expr]
-         (or (= res# 1) (= res# true)))
-      `(or (= ,expr 1) (= ,expr true))))
-
-(fn vim-falsy? [expr]
-  (if (list? expr)
-      `(let [res# ,expr]
-         (or (= res# 0) (= res# false) (= res# nil)))
-      `(or (= ,res 0) (= ,res false) (= ,res nil))))
+(lambda buf->name [?buf]
+  "Return the full file name of `?buf`.
+  @param ?buf number Buffer handle. Leave it empty for current buffer.
+  @return string"
+  ;; Note: vim.api.nvim_buf_get_name() instead provides no way to get the name
+  ;; of altername buffer.
+  `(vim.fn.fnamemodify (vim.fn.bufname ,(or ?buf "")) ":p"))
 
 (lambda str->keycodes [str]
   "Replace terminal codes and keycodes in a string.
@@ -331,7 +363,47 @@
   @return string"
   `(vim.api.nvim_replace_termcodes ,str true true true))
 
-;; Keymap ///2
+(lambda vim/has? [x]
+  `(= (vim.fn.has ,x) 1))
+
+(lambda vim/exists? [x]
+  `(= (vim.fn.exists ,x) 1))
+
+(fn vim/truthy? [expr]
+  ;; Note: Lua expr is always truthy or falsy, so the prefix `vim-` is probably
+  ;; unnecessary: it's a matter of taste.
+  (if (list? expr)
+      `(let [res# ,expr]
+         (or (= res# 1) (= res# true)))
+      `(or (= ,expr 1) (= ,expr true))))
+
+(fn vim/falsy? [expr]
+  (if (list? expr)
+      `(let [res# ,expr]
+         (or (= res# 0) (= res# false) (= res# nil)))
+      `(or (= ,expr 0) (= ,expr false) (= ,expr nil))))
+
+(lambda vim/emtpy? [expr]
+  "A wrapper of `empty()` built in Vim script.
+  `vim.fn.empty()` returns `1` with the results:
+    - nil at runtime
+    - vim.NIL
+    - false
+    - \"\", i.e., zero-length string
+    - 0
+    - {}
+    - []
+  @param expr any
+  @return boolean"
+  `(= (vim.fn.empty ,expr) 1))
+
+(lambda vim/visualized []
+  "Return the last visualized text. It only assumes the area in one line.
+  @return string"
+  `(-> (vim.fn.getline "'<") (: :sub (vim.fn.col "'<") (vim.fn.col "'>"))))
+
+;;; Keymap ///2
+
 (lambda lua->oneliner [lua-expr ...]
   (lua-expr:gsub "%s*\\n%s*" " "))
 
@@ -465,20 +537,22 @@
      ,(map! modes lhs rhs)
      ,(map! modes rhs lhs)))
 
-;; Export ///1
+;;; Export ///1
 
 {:unless when-not
  : when-not
  : if-not
- : nil?
- : bool?
- : str?
- : num?
- : fn?
- : seq?
- : tbl?
- : odd?
- : even?
+ :nil? nil?*
+ :bool? bool?*
+ :true? true?*
+ :false? false?*
+ :str? str?*
+ :num? num?*
+ :fn? fn?*
+ :seq? seq?*
+ :tbl? tbl?*
+ :odd? odd?*
+ :even? even?*
  : ->str
  : ->num
  : ->nil
@@ -489,10 +563,13 @@
  : dec
  : ++
  : --
- : first
- : second
- : last
+ :first first*
+ :second second*
+ :last last*
  : join
+ : evaluate
+ : for-each
+ : export
  : set!
  : setlocal!
  : setglobal!
@@ -519,14 +596,14 @@
  :hi! highlight!
  : executable?
  : directory?
+ : file-readable?
+ : file-writable?
  : mkdir
  : if-let
  : when-let
  : if-some
  : when-some
  : expand
- : has?
- : exists?
  : defer
  : echo!
  : valid-buf?
@@ -535,8 +612,13 @@
  : invalid-win?
  : set-cursor!
  : buf-augroup!
- : vim-truthy?
- : vim-falsy?
+ : buf->name
+ : vim/has?
+ : vim/exists?
+ : vim/truthy?
+ : vim/falsy?
+ : vim/emtpy?
+ : vim/visualized
  : <C-u>
  : <Cmd>
  : <Lua>

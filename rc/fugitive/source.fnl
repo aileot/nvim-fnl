@@ -61,7 +61,7 @@
   (xmap! [:buffer bufnr] :c :sc)
   (nmap! [:buffer bufnr :desc "Stage the last window buffer"] :S
          #(execute! [:wincmd :p] :Gw [:wincmd :p] [:normal :gs] [:normal! :zz]))
-  (nmap! [:buffer bufnr] :R `git-reset-to-cursor-hash)
+  (nmap! [:buffer bufnr] :R git-reset-to-cursor-hash)
   ;; FIXME: Override default local keymaps.
   (let [id (augroup! (.. :rcFugitiveSourceOverwriteKeymaps bufnr))]
     (au! id [:FileType] [:buffer bufnr]
@@ -78,7 +78,7 @@
          (setlocal! :number false)
          (setlocal! :signColumn :no)
          (setlocal! :bufHidden :wipe)))
-  (au! :FileType [:fugitive] `reposition-cursor-in-fugitive-buffer)
-  (au! :FileType [:fugitive :gitcommit] `remember-cursor-position)
+  (au! :FileType [:fugitive] reposition-cursor-in-fugitive-buffer)
+  (au! :FileType [:fugitive :gitcommit] remember-cursor-position)
   (au! :FileType [:fugitive] [:desc "Set up keymaps for git-index"]
        #(setup-fugitive-keymaps $.buf)))

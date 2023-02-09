@@ -18,7 +18,7 @@
                     :c {:case :Camel :desc :changeToCamelCase}
                     :d {:case :Dot :desc :change.to.dot.case}
                     :k {:case :Kebab :desc :change-to-kebab-case}
-                    :p {:case :Pascal :desc :ChangeToPascalCase}
+                    :p {:case :Mixed :desc :ChangeToPascalCase}
                     :s {:case :Snake :desc :change_to_snake_case}
                     :t {:case :Title :desc "Change To Title Case"}
                     :u {:case :Upper :desc :CHANGE_TO_UPPER_CASE}}]

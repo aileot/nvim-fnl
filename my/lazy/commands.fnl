@@ -36,8 +36,8 @@
                        (vim.notify (.. log-file " does not exist")
                                    vim.log.levels.WARN))))))
 
-(command! :CClear ":noautocmd cexpr []" {:bar true :desc "Clear Quickfix list"})
-(command! :LClear ":noautocmd lexpr []" {:bar true :desc "Clear Location list"})
+(command! :Cclear ":noautocmd cexpr []" {:bar true :desc "Clear Quickfix list"})
+(command! :Lclear ":noautocmd lexpr []" {:bar true :desc "Clear Location list"})
 
 (command! :DiffOrig #(vim.cmd "
 vertical above new

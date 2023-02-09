@@ -7,8 +7,6 @@
 
 (local gitsigns (require :gitsigns))
 
-(local use-signcolumn? (not (contains? [:no :number] vim.go.signcolumn)))
-
 (fn toggle-diff [enable?]
   (gitsigns.toggle_word_diff enable?)
   (gitsigns.toggle_linehl enable?))
@@ -38,13 +36,9 @@
                                            :virt_text_pos :right_align
                                            :delay 1000}
                  :current_line_blame_formatter " <abbrev_sha>: <summary>"
-                 ;; Note: Keep sign priority bigger than that of diagnosis,
-                 ;; which also stands out in virtual texts.
-                 :sign_priority 20
-                 :signcolumn use-signcolumn?
-                 :numhl (not use-signcolumn?)
+                 :sign_priority 0
+                 :signcolumn true
+                 :numhl true
                  :linehl false
                  :word_diff false
-                 :signs {:untracked {:numhl :GitSignsUntrackedNr :text ""}
-                         :topdelete {:nunhl :GitSignsTopDeleteNr}
-                         :changedelete {:nunhl :GitSignsChangeDeleteNr}}})
+                 :signs {:untracked {:text ""}}})

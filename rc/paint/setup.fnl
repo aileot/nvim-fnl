@@ -8,6 +8,7 @@
 (local paint (require :paint))
 
 (hi! :TrailingWhitespaces {:bg :Red})
+(hi! :HashTag {:fg :Blue})
 
 ;; Note: filter value is table<option-name,value> or fun(buf: number): boolean.
 
@@ -74,6 +75,11 @@
                           :pattern "^  %s*(@[a-z]+)"
                           :hl :Constant})
 
+(local hash-tag {:filter {:filetype :markdown}
+                 ;; Note: No sentences are assumed to follow tags.
+                 :pattern " #[^#%s]+.*$"
+                 :hl :HashTag})
+
 ;; Note: The latter config is set, the higher it get priority.
 (local highlights [foo
                    foobar
@@ -83,6 +89,7 @@
                    breaking-change
                    trailing-whitespaces
                    lua-annotation
-                   fennel-annotation])
+                   fennel-annotation
+                   hash-tag])
 
 (paint.setup {: highlights})

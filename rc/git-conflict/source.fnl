@@ -21,7 +21,7 @@
                  "[c" (<Plug> :git-conflict-prev-conflict)
                  "]c" (<Plug> :git-conflict-next-conflict)}]
     (each [lhs rhs (pairs keymaps)]
-      (nmap! [:buffer buf :<command>] lhs rhs))
+      (nmap! [:buffer buf] lhs &vim rhs))
     (augroup! (.. "rcGitConflictPostUnmapAfterResolved#" buf)
       (au! :User [:GitConflictResolved]
            #(each [lhs _ (pairs keymaps)]
@@ -29,7 +29,6 @@
 
 (augroup! :rcGitConflictPost
   (au! :User [:GitConflictDetected]
-       (fn [a]
-         (let [msg (.. "Conflict detected in " a.file)]
-           (vim.notify msg vim.log.levels.WARN)
-           (set-keymaps-to-resolve a.buf)))))
+       #(let [msg (.. "Conflict detected in " $.file)]
+          (vim.notify msg vim.log.levels.WARN)
+          (set-keymaps-to-resolve $.buf))))

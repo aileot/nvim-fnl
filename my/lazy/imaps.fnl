@@ -1,6 +1,8 @@
-(import-macros {: if-not : imap! : swap-map!} :my.macros)
+(import-macros {: if-not : imap! : input-map! : swap-map!} :my.macros)
 
 (swap-map! "!" :<C-v> :<C-S-v>)
+
+(input-map! :<C-v><Space> :<lt>Space>)
 
 (imap! [:remap] :<C-r><C-0> :<C-r>0)
 (imap! [:remap] :<C-r><Space> :<C-r>+)
@@ -23,10 +25,11 @@
 (imap! :<C-o><Space>Y "<C-BSlash><C-o>\"+Y")
 
 ;; Note: Adjust cursor position for operator mapleaders.
-(imap! [:remap] "<M-~>" "<Esc>l~")
-(imap! [:remap] :<M-g> :<Esc>lg)
-(imap! [:remap] :<M-BSlash> :<Esc>l<BSlash>)
-(imap! [:remap] :<M-Space> :<Esc>l<Space>)
+;; Note: `<Esc>l` instead fails to continue keys at the end of line.
+(imap! [:remap] "<M-~>" "<Right><Esc>~")
+(imap! [:remap] :<M-g> :<Right><Esc>g)
+(imap! [:remap] :<M-BSlash> :<Right><Esc><BSlash>)
+(imap! [:remap] :<M-Space> :<Right><Esc><Space>)
 
 (imap! :<C-b> :<C-g>U<Left>)
 (imap! :<C-f> :<C-g>U<Right>)

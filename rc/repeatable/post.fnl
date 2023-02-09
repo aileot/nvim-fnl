@@ -81,16 +81,21 @@
                     (: :init))))
 
 ;; Diagnostics ///1
-(let [diagnostic-config {:wrap false
-                         :severity {:min vim.diagnostic.severity.WARN}}]
+(let [min-severity vim.diagnostic.severity.WARN
+      has-warning? #(< 0
+                       (length (vim.diagnostic.get 0
+                                                   {:severity {:min min-severity}})))
+      new-diagnostic-config #{:wrap false
+                              :severity (when (has-warning?)
+                                          {:min min-severity})}]
   ;; Mnemonic: X mark to incorrect position.
   (motion-map! [:desc "Jump to prev diagnostic position"] "[x"
-               #(-> (semicolon:register [#(vim.diagnostic.goto_prev diagnostic-config)
-                                         #(vim.diagnostic.goto_next diagnostic-config)])
+               #(-> (semicolon:register [#(vim.diagnostic.goto_prev (new-diagnostic-config))
+                                         #(vim.diagnostic.goto_next (new-diagnostic-config))])
                     (: :init)))
   (motion-map! [:desc "Jump to next diagnostic position"] "]x"
-               #(-> (semicolon:register [#(vim.diagnostic.goto_next diagnostic-config)
-                                         #(vim.diagnostic.goto_prev diagnostic-config)])
+               #(-> (semicolon:register [#(vim.diagnostic.goto_next (new-diagnostic-config))
+                                         #(vim.diagnostic.goto_prev (new-diagnostic-config))])
                     (: :init))))
 
 (let [diagnostic-config {:wrap false}]

@@ -1,7 +1,7 @@
 ;; TOML: browse.toml
 ;; Repo: tamago324/lir.nvim
 
-(import-macros {: setlocal! : xmap! : <C-u> : join} :my.macros)
+(import-macros {: setlocal! : xmap! : <C-u>} :my.macros)
 
 (local lir (require :lir))
 (local (devicons-available? devicons) (pcall require :nvim-web-devicons))
@@ -52,15 +52,15 @@
                        (xmap! [:<buffer> :silent] :m
                               (<C-u> "lua require'lir.mark.actions'.toggle_mark('v')"))
                        (xmap! [:<buffer> :silent] :Y
-                              (<C-u> (join " "
-                                           [:lua
-                                            "require'lir.mark.actions'.toggle_mark('v')"
-                                            "require'lir.clipboard.actions'.copy()"])))
+                              (<C-u> (table.concat [:lua
+                                                    "require'lir.mark.actions'.toggle_mark('v')"
+                                                    "require'lir.clipboard.actions'.copy()"]
+                                                   " ")))
                        (xmap! [:<buffer> :silent] :x
-                              (<C-u> (join " "
-                                           [:lua
-                                            "require'lir.mark.actions'.toggle_mark('v')"
-                                            "require'lir.clipboard.actions'.cut()"]))))})
+                              (<C-u> (table.concat [:lua
+                                                    "require'lir.mark.actions'.toggle_mark('v')"
+                                                    "require'lir.clipboard.actions'.cut()"]
+                                                   " "))))})
 
 ;; (when devicons-available?
 ;;   (devicons.setup {:override {:lir_folder_icon {:icon ""

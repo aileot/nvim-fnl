@@ -3,7 +3,9 @@
 
 (import-macros {: augroup! : au! : cmap! : <Cmd>} :my.macros)
 
-(local {: default-pum-options} (require :rc.pum.post))
+(local {: with-eventignore!} (require :my.utils))
+
+(local {: pum} (require :rc.pum.options))
 
 (fn setup-cmdline-options []
   (let [cmd-type (vim.fn.getcmdtype)
@@ -30,7 +32,7 @@
     (augroup! :rcPumCmdlineRestoreCompletionOptions
       (au! :CmdlineLeave [:once]
            (fn []
-             (vim.fn.pum#set_option default-pum-options)
+             (vim.fn.pum#set_option pum.default)
              (vim.fn.ddc#custom#patch_buffer save-ddc-patch))))))
 
 (fn enable-cmdline-completion []
@@ -47,6 +49,7 @@
   (cmap! [:literal :expr] :<C-e>
          "pum#visible() ? '<Cmd>call pum#map#cancel()<CR>' : '<End>'. ddc#map#complete('pum')")
   (setup-cmdline-options)
-  (vim.fn.ddc#enable_cmdline_completion))
+  ;; Note: Disable flickers due to the difference on NormalNC.
+  (with-eventignore! [:WinEnter] vim.fn.ddc#enable_cmdline_completion))
 
 {: enable-cmdline-completion}

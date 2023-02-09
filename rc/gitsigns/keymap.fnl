@@ -9,8 +9,11 @@
                 : nmap!
                 : range-map!
                 : textobj-map!
+                : str->keycodes
+                : <Plug>
                 : <Cmd>} :my.macros)
 
+;; Note: Most actions are repeatable with vim-repeat by default.
 (local {: del-augroup! : Operator} (require :my.utils))
 
 (fn preview-hunk-or-blame []
@@ -23,7 +26,7 @@
                                    "[gitsigns] Show blame"))]
                      (echo! msg)))))
 
-(nmap! :<Space>gm [:desc "Preview hunk or blame"] `preview-hunk-or-blame)
+(nmap! :<Space>gm [:desc "Preview hunk or blame"] preview-hunk-or-blame)
 (do
   (var ?id nil)
   (nmap! :<Space>og [:desc "[gitsigns] Toggle hunk/blame popup"]
@@ -36,7 +39,7 @@
                      (preview-hunk-or-blame)
                      (au! nil [:InsertEnter :TextChanged] [:once]
                           #(pcall vim.api.nvim_del_autocmd ?id))
-                     (au! nil :CursorMoved `preview-hunk-or-blame))))))
+                     (au! nil :CursorMoved preview-hunk-or-blame))))))
 
 (nmap! :<Space>oD [:desc "[gitsigns] Toggle word-diff"]
        #(let [gitsigns (require :gitsigns)
@@ -62,12 +65,15 @@
 (nmap! :<Space>gP (<Cmd> "up | Gitsigns stage_buffer"))
 (nmap! :<Space>gw (<Cmd> "up | Gitsigns stage_buffer"))
 
-(range-map! :<Space>gp [:desc "Stage hunks in range" :expr]
-            #(Operator.new (fn [a]
-                             (let [{: stage_hunk} (require :gitsigns)]
-                               ;; Note: stage_hunk is repeatable by default
-                               (vim.cmd.update)
-                               (stage_hunk [a.row1 a.row2])))))
+(let [<SID>operator-stage-hunk (<Plug> :operator-stage-hunk)]
+  (range-map! :<space>gp [:desc "stage hunks in range"]
+              <SID>operator-stage-hunk)
+  (range-map! <SID>operator-stage-hunk [:expr]
+              #(Operator.new (fn [a]
+                               (let [{: stage_hunk} (require :gitsigns)]
+                                 (vim.cmd.update)
+                                 (stage_hunk [a.row1 a.row2])
+                                 (vim.fn.repeat#set (str->keycodes <SID>operator-stage-hunk)))))))
 
 (textobj-map! :ic [:silent] ":Gitsigns select_hunk<CR>")
 (textobj-map! :ac [:silent] ":Gitsigns select_hunk<CR>")

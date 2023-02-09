@@ -1,4 +1,5 @@
-(import-macros {: when-not : set! : setlocal! : augroup! : au!} :my.macros)
+(import-macros {: when-not : vim/exists? : set! : setlocal! : augroup! : au!}
+               :my.macros)
 
 (local {: large-file?} (require :my.utils))
 (local expand vim.fn.expand)
@@ -22,6 +23,11 @@
 (set! :ruler true)
 
 ;; Columns
+;; (if (vim/exists? :+statuscolumn)
+;;   (set! :statusColumn ;
+;;       ;; Note: `%=` indicates right-aligned.
+;;       ;; Note: Vim script interprets 0 as falsy value.
+;;         "%s%=%{v:relnum ? v:relnum : v:lnum}"))
 (set! :number true)
 (set! :signColumn :yes)
 ;; (set! :signColumn :number)
@@ -156,7 +162,7 @@
 
 ;; Format ///1
 ;; (set! :joinspaces true)
-(set! :textWidth 79)
+(set! :textWidth 78)
 (set! :spellLang "en_us,cjk")
 
 ;; Related help tags:

@@ -30,6 +30,11 @@
      :<C-u> false
      :<C-d> false
      "<C-]>" action_layout.toggle_preview
+     :<M-CR> (fn []
+               ;; Continue to Normal mapping prefix `<CR>`.
+               ;; It makes it easier to switch to different
+               ;; telescope source.
+               (feedkeys! :<Esc><CR> :mi))
      :<M-Space> (fn []
                   ;; Continue to Normal mapping prefix `<Space>`.
                   ;; It makes it easier to switch to different
@@ -56,6 +61,11 @@
      :<C-u> actions.preview_scrolling_up
      :<C-d> actions.preview_scrolling_down
      "<C-]>" action_layout.toggle_preview
+     :<M-CR> (fn []
+               ;; Continue to Normal mapping prefix `<CR>`.
+               ;; It makes it easier to switch to different
+               ;; telescope source.
+               (feedkeys! :<Esc><CR> :mi))
      :<M-Space> (fn []
                   ;; Whether in Normal mode or in Insert mode.
                   (feedkeys! :<Esc><Space> :mi))}}

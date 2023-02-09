@@ -18,7 +18,7 @@
 
 ;; Repeatable `xp`
 ;; TODO: Speed up
-(let [repeatable-xp #(vim.fn.repeat#set (str->keycodes "<Cmd>undojoin<CR>\"_xp"))]
+(let [repeatable-xp #(pcall vim.fn.repeat#set (str->keycodes "<Cmd>undojoin<CR>\"_xp"))]
   (nmap! [:expr] :p #(if (vim.fn.eval "@\" ==# @-")
                          (do
                            (repeatable-xp)

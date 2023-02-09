@@ -1,4 +1,5 @@
-(import-macros {: printf : augroup! : au! : set! : nmap! : has?} :my.macros)
+(import-macros {: printf : augroup! : au! : set! : nmap! : vim/has?} :my.macros)
+
 ;; cspell:ignoreRegExp :i[a-z]+
 
 (set! :diffOpt [:filler
@@ -11,7 +12,7 @@
                 :indent-heuristic
                 "algorithm:histogram"])
 
-(when (has? :nvim-0.9.0)
+(when (vim/has? :nvim-0.9.0)
   (set! :diffOpt+ "linematch:60"))
 
 (nmap! :<Space>odx [:desc "[diff] Toggle diff detection exactness"]

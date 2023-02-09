@@ -14,60 +14,62 @@
      (each [k v (pairs save-opts)]
        (setlocal! k v))))
 
-(local document-diagnostics vim.diagnostic.document-diagnostics)
-(local workspace-diagnostics vim.diagnostic.workspace-diagnostics)
+;; Note: The names derives from :h lsp-method
 
-(local definitions lsp.definition)
+(local documentDiagnostics vim.diagnostic.document-diagnostics)
+(local workspaceDiagnostics vim.diagnostic.workspace-diagnostics)
+
+(local definition lsp.definition)
 (local references lsp.references)
-(local declarations lsp.declaration)
-(local type-definitions lsp.type_definition)
-(local implementations lsp.implementation)
+(local declaration lsp.declaration)
+(local typeDefinition lsp.type_definition)
+(local implementation lsp.implementation)
 
 (local hover (inherit-opts-for-gf lsp.hover))
-(local signature-help (inherit-opts-for-gf lsp.signature_help))
+(local signatureHelp (inherit-opts-for-gf lsp.signature_help))
 
 (local rename lsp.rename)
 
-(local add-workspace-folder lsp.add_workspace_folder)
-(local remove-workspace-folder lsp.remove_workspace_folder)
+(local addWorkspaceFolder lsp.add_workspace_folder)
+(local removeWorkspaceFolder lsp.remove_workspace_folder)
 
-(local document-symbols lsp.document_symbols)
-(local workspace-symbols lsp.workspace_symbols)
+(local documentSymbols lsp.document_symbols)
+(local workspaceSymbols lsp.workspace_symbols)
 
-(local outgoing-calls lsp.outgoing_calls)
-(local incoming-calls lsp.incoming_calls)
+(local outgoingCalls lsp.outgoing_calls)
+(local incomingCalls lsp.incoming_calls)
 
-(local code-actions lsp.code_action)
-(local range-code-actions
+(local codeAction lsp.code_action)
+(local rangeCodeAction
        #(Operator.run (fn [{: start : end}]
                         (lsp.code_action {:range {: start : end}}))))
 
 (local format (fn []
                 (lsp.format {:async true})
-                (vim.notify "[lsp] formatted entire buffer")))
+                (comment (vim.notify "[lsp] formatted entire buffer"))))
 
-(local range-format
+(local rangeFormat
        #(Operator.run (fn [{: start : end}]
                         (lsp.format {:async true :range {: start : end}})
-                        (vim.notify "[lsp] formatted in range"))))
+                        (comment (vim.notify "[lsp] formatted in range")))))
 
-{: document-diagnostics
- : workspace-diagnostics
- : definitions
+{: documentDiagnostics
+ : workspaceDiagnostics
+ : definition
  : references
- : declarations
- : type-definitions
- : implementations
+ : declaration
+ : typeDefinition
+ : implementation
  : hover
- : signature-help
+ : signatureHelp
  : rename
- : add-workspace-folder
- : remove-workspace-folder
- : document-symbols
- : workspace-symbols
- : outgoing-calls
- : incoming-calls
- : code-actions
- : range-code-actions
+ : addWorkspaceFolder
+ : removeWorkspaceFolder
+ : documentSymbols
+ : workspaceSymbols
+ : outgoingCalls
+ : incomingCalls
+ : codeAction
+ : rangeCodeAction
  : format
- : range-format}
+ : rangeFormat}

@@ -24,7 +24,7 @@
                 (vim.cmd "silent update")
                 (if (git-tracking? path)
                     (vim.cmd.GDelete)
-                    (vim.cmd.Delete)))))
+                    (vim.cmd.Delete!)))))
 
 (nmap! [:desc "[git] :read current buffer to HEAD:%"] :<Space>gE
        #(when (confirm? ":read HEAD:%?")
@@ -32,8 +32,15 @@
           (vim.cmd.update)))
 
 (nmap! [:desc "[git] reset this repository to HEAD~"] :<Space>gR
-       #(when (confirm? "Reset this repository to \"HEAD~\"?")
-          (vim.cmd.Git "reset HEAD~")))
+       #(let [dir (-> (git [:rev-parse :--show-toplevel])
+                      (: :gsub "\n" "")
+                      (vim.fn.fnamemodify ":~"))
+              log (git [:log :-2 "--pretty=  %h %s @%an"])
+              msg (printf "The directory: %s
+The last commit subjects:
+%sReset current HEAD to HEAD~?" dir log)]
+          (when (confirm? msg)
+            (vim.cmd.Git "reset HEAD~"))))
 
 (nmap! [:desc "[git] unstage current file"] :<Space>gu
        (<Cmd> "silent Git reset HEAD %"))
@@ -81,7 +88,7 @@
                                    ""))]
           (execute! [:Git git-args] [:wincmd :J] [:resize :25])))))
 
-(nmap! [:desc "[git] edit commit"] :<Space>gcc `git-commit)
+(nmap! [:desc "[git] edit commit"] :<Space>gcc git-commit)
 (nmap! [:desc "[git] amend to last commit"] :<Space>gca
        #(git-commit [:--amend]))
 

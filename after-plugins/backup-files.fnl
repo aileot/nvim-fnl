@@ -35,12 +35,12 @@
          "silent! setlocal swapfile"))
   (let [group (augroup! :myBackupFilesToggleSwapfile)]
     (au! group :BufReadPost [:desc "Enable swapfile on change"]
-         `enable-swapfile-on-change)
+         enable-swapfile-on-change)
     (au! group :BufWritePost [:desc "Remove swapfile"]
          #(when (and vim.bo.swapfile (not vim.bo.modified))
             ;; Note: swapfile is removed when &swapfile becomes false.
             (setlocal! :swapFile false)
-            enable-swapfile-on-change))))
+            (enable-swapfile-on-change $)))))
 
 ;; (augroup! :myBackupFilesRecoverBackup
 ;;           (au! :BufWinEnter "*/.git/{config,hooks/*}"

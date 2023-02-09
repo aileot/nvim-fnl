@@ -3,7 +3,8 @@
 
 (import-macros {: au! : nmap! : <Cmd> : <C-u>} :my.macros)
 
-;; Note: <Cmd> instead fails to invoke TSCaptureUnderCursor.
+;; Note: <Cmd> instead fails to invoke TSCaptureUnderCursor; either does <C-u>
+;; fail with "silent".
 (nmap! :<Space>et [:desc "[treesitter] Enumerate TS capture"]
        (<C-u> :TSCaptureUnderCursor))
 (nmap! :<Space>eT [:desc "[treesitter] Enumerate TS nodes in tree"]

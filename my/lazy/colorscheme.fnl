@@ -1,8 +1,9 @@
 ;; TOML: colorschemes.toml
 
-(import-macros {: highlight! : augroup! : au!} :my.macros)
+(import-macros {: nil? : highlight! : augroup! : au! : set!} :my.macros)
 
-(local default-theme :spring-night)
+(set! :bg :light)
+(local default-theme :kanagawa)
 
 (highlight! :InvalidChar {:bold true :undercurl true :fg :Red :bg :White})
 (highlight! :Zenkaku {:link :InvalidChar})
@@ -77,9 +78,9 @@
                                :bold true})))
 
   (augroup! :myColorschemeOverrideDefault
-    (au! :ColorSchemePre #(source-config-files! $.match :source))
-    (au! :ColorScheme #(source-config-files! $.match :post))
-    (au! :ColorScheme `highlight-common!)
+    (au! :ColorSchemePre #(source-config-files! $.match :setup))
+    (au! :ColorScheme #(source-config-files! $.match :override))
+    (au! :ColorScheme highlight-common!)
     (au! [:ColorScheme :WinEnter] [:desc "Highlight zenkaku letters"]
          ;; Note: Lua pattern with `[]` instead also highlights other ambiwidth
          ;; letters unexpectedly addition to Zenkaku letters, i.e., paint.nvim
@@ -93,4 +94,5 @@ call matchadd('Zenkaku', '[▽▼]')
 
 ;; Note: `pcall` to debug without package manager.
 
-(pcall vim.cmd.colorscheme default-theme)
+(when (nil? vim.g.colors_name)
+  (pcall vim.cmd.colorscheme default-theme))

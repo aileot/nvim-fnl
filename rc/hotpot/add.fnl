@@ -1,7 +1,13 @@
 ;; TOML: init.toml
 ;; Repo: rktjmp/hotpot.nvim
 
-(import-macros {: printf : command! : augroup! : au!} :my.macros)
+(import-macros {: fn? : printf : command! : augroup! : au!} :my.macros)
+
+(local {: alias!} (require :my.utils))
+
+(alias! :fnl :Fnl)
+;; Note: Expansion depends on &l:iskeyword.
+(alias! :fnl= :Fnl=)
 
 (command! :HotpotCacheClear #(let [{: clear-cache} (require :hotpot.api.cache)]
                                (clear-cache)))
@@ -19,7 +25,9 @@
        ;; "runtime! ftplugin/<amatch>.fnl ftplugins/<amatch>/*.fnl"))
        ;; Note: ftplugin files in Fennel must be written by myself. No needs to
        ;; count all the `ftplugin/<amatch>.fnl`s through `&runtimepath`.
-       #(let [mod (printf "my.ftplugin.%s" $.match)]
-          (tset package.loaded mod nil)
-          (pcall require mod)
-          nil)))
+       #(let [mod-name (printf "my.ftplugin.%s" $.match)
+              (ok? mod) (pcall require mod-name)]
+          (when ok?
+            (assert (fn? mod)
+                    (.. "expected function, dump:\n" (vim.inspect mod)))
+            (mod)))))

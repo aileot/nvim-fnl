@@ -31,10 +31,10 @@
   (au! [:BufNewFile :BufRead] [:*/httpd/*] #(setlocal! :path^ :/etc/httpd/*))
   (au! [:BufNewFile :BufRead] [:*/lampp/*] #(setlocal! :path^ :/etc/lampp/*))
   ;; GHQ
-  (au! [:BufNewFile :BufRead] [:$GHQ_ROOT/*/*/*] `vim.fn.my#path#ghq)
+  (au! [:BufNewFile :BufRead] [:$GHQ_ROOT/*/*/*] vim.fn.my#path#ghq)
   ;; Dotfiles
-  (au! :TermOpen `vim.fn.my#path#vimrc)
-  (au! :FileType `vim.fn.my#path#vimrc)
-  (au! [:BufNewFile :BufRead] ["*/{*vim,dein}/*"] `vim.fn.my#path#vimrc)
+  (au! :TermOpen vim.fn.my#path#vimrc)
+  (au! :FileType vim.fn.my#path#vimrc)
+  (au! [:BufNewFile :BufRead] ["*/{*vim,dein}/*"] vim.fn.my#path#vimrc)
   (au! [:BufNewFile :BufRead] ["*/{.config,dotfiles}/*"]
-       `vim.fn.my#path#dotfiles))
+       vim.fn.my#path#dotfiles))

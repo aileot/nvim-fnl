@@ -26,12 +26,6 @@
 (omap! :D :<Esc>D)
 (omap! :C :<Esc>C)
 
-;; Linewise operator
-(omap! "{" "V{")
-(omap! "}" "V}")
-(omap! "[z" "V[z")
-(omap! "]z" "V]z")
-
 ;; ;; Keep visualized area after fold manipulation.
 ;; (xmap! :zo :zogv)
 ;; (xmap! :zO :zOgv)

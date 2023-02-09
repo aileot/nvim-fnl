@@ -21,7 +21,7 @@
 ;; [README](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md)
 (local sources ;
        [(comment hover.dictionary)
-        code-actions.eslint_d
+        ;; code-actions.eslint_d
         ;; code-actions.proselint
         ;; code-actions.gitsigns
         code-actions.gitrebase
@@ -35,7 +35,7 @@
         (diagnostics.flake8.with [:--extend-ignore=E203 :--max-line-length=88])
         ;; (diagnostics.xo.with [:--prettier])
         ;; diagnostics.statix
-        diagnostics.eslint_d
+        ;; diagnostics.eslint_d
         ;; diagnostics.hadolint
         ;; diagnostics.vint
         ;; diagnostics.semgrep
@@ -51,10 +51,10 @@
           ;; `package.json`.
           ;; Ref: https://github.com/conventional-changelog/commitlint/issues/613
           diagnostics.commitlint)
-        ;; (diagnostics.codespell.with {:condition editable-buffer?})
+        ;; (diagnostics.codespell.with {:runtime_condition editable-buffer?})
         (diagnostics.cspell.with {:method methods.DIAGNOSTICS_ON_SAVE
-                                  :condition editable-buffer?
-                                  :disabled_filetypes [:log :markdown]
+                                  :runtime_condition editable-buffer?
+                                  :disabled_filetypes [:log :markdown :c :cpp]
                                   :extra_args [:--config
                                                (expand :$XDG_CONFIG_HOME/cspell/cspell.yaml)]
                                   :diagnostic_config {:sign false}
@@ -65,7 +65,7 @@
         ;;                                           :text
         ;;                                           :txt
         ;;                                           :help]
-        ;;                               :condition editable-buffer?
+        ;;                               :runtime_condition editable-buffer?
         ;;                               :diagnostic_config {:signs false}
         ;;                               :diagnostics_postprocess ;
         ;;                               (set-severity SEVERITY.HINT)})
@@ -76,7 +76,23 @@
         formatting.shellharden
         formatting.fish_indent
         formatting.rustfmt
-        formatting.deno_fmt
+        (formatting.deno_fmt.with {:extra_args (fn [a]
+                                                 ;; Respect textwidth & shiftwidth for now.
+                                                 ;; Ref: https://github.com/jose-elias-alvarez/null-ls.nvim/issues/1322
+                                                 ;; Ref: https://github.com/jose-elias-alvarez/null-ls.nvim/issues/1325
+                                                 (let [bo (. vim.bo a.bufnr)
+                                                       opts {:--options-line-width (when (< 0
+                                                                                            bo.textwidth)
+                                                                                     bo.textwidth)
+                                                             :--options-indent-width (when (< 0
+                                                                                              bo.shiftwidth)
+                                                                                       bo.shiftwidth)}
+                                                       args []]
+                                                   (each [k ?v (pairs opts)]
+                                                     (when ?v
+                                                       (table.insert args k)
+                                                       (table.insert args ?v)))
+                                                   args))})
         ;; formatting.eslint
         formatting.eslint_d
         ;; Python
@@ -107,7 +123,8 @@
                                                              :buf-augroup!
                                                              :insulate
                                                              :describe
-                                                             :it]
+                                                             :it
+                                                             :pending]
                                                             ",")]})
         ;; formatting.yamlfmt
         formatting.sqlformat

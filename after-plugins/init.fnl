@@ -4,6 +4,8 @@ runtime lazy/init.vim
 runtime once/init.vim
 ")
 
+(require :my.lazy.alias)
+(require :my.lazy.on-keys)
 (require :my.lazy.augroups)
 (require :my.lazy.colorscheme)
 (require :my.lazy.startpage)
@@ -18,3 +20,5 @@ runtime once/init.vim
 (require :my.lazy.tmaps)
 (require :my.lazy.textobj-maps)
 (require :my.lazy.commands)
+(require :my.lazy.diagnostic)
+(require :my.lazy.tui)

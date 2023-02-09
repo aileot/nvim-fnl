@@ -2,7 +2,7 @@
 (import-macros {: when-not
                 : augroup!
                 : au!
-                : wo!
+                : setlocal!
                 : nmap!
                 : unmap!
                 : valid-buf?} :my.macros)
@@ -10,8 +10,7 @@
 (local {: contains? : buf-get-mapargs : del-augroup!} (require :my.utils))
 
 (lambda immutable-buf? [bufnr]
-  (and (valid-buf? bufnr) ;
-       (not (. vim.bo bufnr :modifiable))))
+  (not (. vim.bo bufnr :modifiable)))
 
 (lambda viewer-mode-makes-sense? [bufnr]
   (and (valid-buf? bufnr) ;
@@ -25,13 +24,15 @@
                     :<C-a> :<C-i>})
 
 (lambda set-viewer-keymaps [bufnr]
+  "Set buffer-local keymaps for viewer-mode. The keymaps are to be restored
+  when the buffer gets back to be editable."
   (let [any-buf-keymap? (accumulate [buf-keymap? false ;
                                      lhs _ (pairs buf-keymaps) ;
                                      &until buf-keymap?]
                           (buf-get-mapargs bufnr :n lhs))]
     (when-not any-buf-keymap?
       (each [lhs rhs (pairs buf-keymaps)]
-        (nmap! [:buffer bufnr :nowait :<command>] lhs rhs))
+        (nmap! [:buffer bufnr :nowait] lhs &vim rhs))
       (let [id (augroup! (.. "myLazyViewerModeUnmapIfModifiable#" bufnr))]
         (au! id :OptionSet [:modifiable]
              #(when-not (immutable-buf? bufnr)
@@ -40,24 +41,35 @@
                 (del-augroup! id)))))))
 
 (lambda switch-winlocal-options [bufnr]
-  (let [e? (immutable-buf? bufnr)
-        wo-table {:signcolumn (if e? :no vim.go.signcolumn)}]
-    (each [_ win-id (ipairs (vim.fn.win_findbuf bufnr))]
-      (each [name val (pairs wo-table)]
-        (wo! win-id name val)))))
-
-(lambda switch-viewer-mode [bufnr]
-  (when (immutable-buf? bufnr)
-    (set-viewer-keymaps bufnr)
-    (switch-winlocal-options bufnr)
-    (augroup! (.. "myLazyViewerModeSwitchWindowLocalOptions#" bufnr)
-      (au! [:BufWinEnter :BufWinLeave] [:buffer bufnr]
-           #(switch-winlocal-options bufnr)))))
+  (let [immutable? (immutable-buf? bufnr)
+        wo-options {:signColumn (if immutable? :no vim.go.signcolumn)
+                    :concealLevel (if immutable? 2 vim.go.conceallevel)
+                    :concealCursor (if immutable? :nc vim.go.concealcursor)}]
+    (each [_ win (ipairs (vim.fn.win_findbuf bufnr))]
+      (each [name val (pairs wo-options)]
+        ;; Note: vim.wo instead doesn't work expectedly as most of them do not
+        ;; mean global-local options. Therefore, the interfaces instead are
+        ;; useless:
+        ;;   - vim.wo
+        ;;   - vim.api.nvim_set_option_value()
+        ;;   - vim.api.win_set_option() -- deprecated
+        ;;   - vim.fn.setwinvar()
+        ;; See https://github.com/neovim/neovim/pull/20288.
+        (vim.api.nvim_win_call win #(setlocal! (name:lower) val))))))
 
 (lambda try-viewer-mode [{: buf}]
   (when (viewer-mode-makes-sense? buf)
-    (switch-viewer-mode buf)))
+    (switch-winlocal-options buf)
+    (when (immutable-buf? buf)
+      (set-viewer-keymaps buf)))
+  ;; Note: Not to return true at the end of autocmd in case.
+  nil)
 
 (augroup! :myLazyViewerMode
-  (au! :BufWinEnter `try-viewer-mode)
-  (au! :OptionSet [:modifiable] [:desc "Start viewer-mode"] `try-viewer-mode))
+  ;; Note: autocmd on OptionSet cannot set buf-locally.
+  (au! :OptionSet [:modifiable]
+       [:desc "Try Viewer mode if it makes sense in current buf"]
+       try-viewer-mode)
+  (au! [:BufWinEnter :BufWinleave]
+       [:desc "Try Viewer mode if it makes sense in current buf"]
+       try-viewer-mode))

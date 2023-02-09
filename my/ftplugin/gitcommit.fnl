@@ -27,9 +27,9 @@
 
 (lambda set-keymaps []
   (imap! [:<buffer>] :<C-q> (<Cmd> :x))
-  (nmap! [:<buffer> :desc "Erase git-commitmsg"] :ZQ `erase-buf)
-  (nmap! [:<buffer> :desc "Erase git-commitmsg"] :Zq `erase-buf)
-  (nmap! [:<buffer> :desc "Erase git-commitmsg"] :<C-w>c `erase-buf))
+  (nmap! [:<buffer> :desc "Erase git-commitmsg"] :ZQ erase-buf)
+  (nmap! [:<buffer> :desc "Erase git-commitmsg"] :Zq erase-buf)
+  (nmap! [:<buffer> :desc "Erase git-commitmsg"] :<C-w>c erase-buf))
 
 (buf-augroup! :ftGitcommit
   (au! :QuitPre
@@ -74,6 +74,4 @@
       :new-commit (feedkeys! :ggi :ni)
       :rebasing (start-cursor-at-2nd-commitmsg! (vim.api.nvim_get_current_buf)))))
 
-(vim.schedule setup)
-
-nil
+setup

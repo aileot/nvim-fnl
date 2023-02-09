@@ -28,7 +28,7 @@
     (nmap! [:<buffer>] lhs rhs)))
 
 (augroup! :rcDapUISetlocalMappingsOnLaunch
-  (au! :FileType [:dapui_*] `enable-local-mappings-to-widgets))
+  (au! :FileType [:dapui_*] enable-local-mappings-to-widgets))
 
 (dapui.setup {:mappings {:expand [:zo :zO]
                          ;;  Toggle showing any children of variable in "Scope".

@@ -1,18 +1,12 @@
 ;; TOML: git.toml
 ;; Repo: lewis6991/gitsigns.nvim
 
-(local {: contains? : register-column-highlight} (require :my.utils))
+(local {: register-column-highlight} (require :my.utils))
 
-(local no-signcolumn? (contains? [:no :number] vim.go.signcolumn))
-
-(when no-signcolumn?
-  (register-column-highlight {:GitSignsAddNr {:fg :GitGutterAdd :bold true}
-                              :GitSignsChangeNr {:fg :GitGutterChange
-                                                 :bold true}
-                              :GitSignsDeleteNr {:fg :GitGutterDelete
-                                                 :bold true}
-                              :GitSignsTopDeleteNr {:fg :GitGutterDelete
-                                                    :bold true}
-                              :GitSignsChangeDeleteNr {:fg :GitGutterChange
-                                                       :bold true}
-                              :GitSignsUntrackedNr {:fg :#000000 :bg :#FFFFFF}}))
+(register-column-highlight {:GitSignsAddNr {:bg :DiffAdd :bold true}
+                            :GitSignsChangeNr {:bg :DiffChange :bold true}
+                            :GitSignsDeleteNr {:bg :DiffDelete :bold true}
+                            :GitSignsTopDeleteNr {:bg :DiffDelete :bold true}
+                            :GitSignsChangeDeleteNr {:bg :DiffChange
+                                                     :bold true}
+                            :GitSignsUntrackedNr {:fg :ErrorMsg}})

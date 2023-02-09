@@ -13,5 +13,5 @@
                          (. (require :dap) :continue))]
     (dap-continue)))
 
-(nmap! :mc `continue-debug)
-(nmap! :<F5> `continue-debug)
+(nmap! :mc continue-debug)
+(nmap! :<F5> continue-debug)

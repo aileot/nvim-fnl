@@ -13,8 +13,7 @@
                    :smart_rename {:enable true
                                   ;; :disable [:lua :vim :fennel]
                                   :keymaps {:smart_rename :cs}}
-                   ;; Note: gd for make is not implemented yet.
-                   :navigation {:enable [:make]
+                   :navigation {:enable true
                                 :keymaps {:goto_definition :gd
                                           :list_definitions :gD
                                           :goto_next_usage "[u"

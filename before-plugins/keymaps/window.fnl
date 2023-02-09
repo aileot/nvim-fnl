@@ -24,8 +24,8 @@
 (let [highlight-off! #(execute! :noh :redraw!
                                 (when vim.wo.diff
                                   :diffupdate))]
-  (nmap! :<C-Space><Space> `highlight-off!)
-  (nmap! :<C-Space><C-Space> `highlight-off!))
+  (nmap! :<C-Space><Space> highlight-off!)
+  (nmap! :<C-Space><C-Space> highlight-off!))
 
 ;; Close Window ///1
 (nmap! :<C-w>O (<Cmd> :tabonly))
@@ -36,24 +36,21 @@
 (nmap! :<C-w>Z :ZZ)
 (nmap! :<C-w>Q :ZQ)
 
-(let [close-current-tabpage ;
-      ;; Note: `:tabclose` instead fails to close the last tab page.
-      (<Cmd> "up | windo normal! ZQ")]
-  (nmap! [:<command>] :ZC close-current-tabpage)
-  (nmap! [:<command>] :Zc close-current-tabpage)
-  (nmap! [:<command>] :<C-w>C close-current-tabpage))
+;; Note: `:tabclose` instead fails to close the last tab page.
+(nmap! :ZC (<Cmd> "up | windo normal! ZQ"))
+(nmap! [:remap] :Zc :ZC)
+(nmap! [:remap] :<C-w>C :ZC)
 
-(let [eliminate-current-tabpage (<Cmd> "windo normal! ZQ")]
-  (nmap! [:<command>] :ZE eliminate-current-tabpage)
-  (nmap! [:<command>] :Ze eliminate-current-tabpage)
-  (nmap! [:<command>] :<C-w>e eliminate-current-tabpage)
-  (nmap! [:<command>] :<C-w>E eliminate-current-tabpage))
+(nmap! :ZE (<Cmd> "windo normal! ZQ"))
+(nmap! [:remap] :Ze :ZE)
+(nmap! [:remap] :<C-w>e :ZE)
+(nmap! [:remap] :<C-w>E :ZE)
 
 ;; Mnemonic: $ yes
 (nmap! :ZY (<Cmd> :qa))
-(nmap! :Zy (<Cmd> :qa))
 (nmap! :ZN (<Cmd> :xa))
-(nmap! :Zn (<Cmd> :xa))
+(nmap! [:remap] :Zy :ZY)
+(nmap! [:remap] :Zn :ZN)
 
 ;; Move in Windows ///1
 ;; Move to an adjacent window

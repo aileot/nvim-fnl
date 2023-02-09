@@ -79,8 +79,16 @@
 (set! :foldNestMax 5)
 ;; (set! :foldClose "all")
 
-(set! :foldOpen ;
-      [:hor :insert :mark :percent :quickfix :search :tag :undo])
+(set! :foldOpen [:block
+                 :hor
+                 :insert
+                 :jump
+                 :mark
+                 :percent
+                 :quickfix
+                 :search
+                 :tag
+                 :undo])
 
 ;; (set! :imDisable true)
 (set! :imInsert 0)
@@ -99,21 +107,3 @@
 ;; Diagnostic ///1
 (set! :spellLang "en_us,cjk")
 (set! :spellOptions "camel")
-
-(vim.diagnostic.config {:virtual_text {:source :if_many}
-                        :float {:wrap false
-                                ;; header false
-                                :source :always}})
-
-;; :format (fn [diag]
-;;           (let [SEVERITY vim.diagnostic.severity
-;;                 sev diag.severity
-;;                 prefix (match sev
-;;                          SEVERITY.ERROR :E
-;;                          SEVERITY.WARN :W
-;;                          SEVERITY.INFO :I
-;;                          SEVERITY.HINT :H)]
-;;             (if prefix
-;;                 (string.format "%s #%s" diag.message
-;;                                prefix)
-;;                 diag.message)))})

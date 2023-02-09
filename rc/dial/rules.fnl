@@ -3,7 +3,7 @@
 
 ;; WIP
 
-(local {: capitalize} (require :my.utils))
+(local {: extend : capitalize} (require :my.utils))
 
 (local {: case
         : constant
@@ -26,9 +26,9 @@
 (local semantic-versioning semver.alias.semver)
 (local {: markdown_header} misc.alias)
 
-(local {;; natural numbers and 0
+(local {;; Natural numbers including 0
         :decimal natural-decimal
-        ;; including negative numbers
+        ;; Decimal integers
         :decimal_int decimal
         : hex
         : octal
@@ -80,6 +80,11 @@
                                      new-element)]
                         {: text :cursor 1}))})))
 
+;; TODO: Make wrappers:
+;;    - verbs (-ing, -ed, -es)
+;;    - nouns (-es)
+;;    - adjective (-er, -est)
+;;    - Regex pattern
 (local default [decimal
                 (new-cycle [:true :false])
                 (new-cycle [:old :new])
@@ -90,14 +95,17 @@
                 (new-cycle [:increment :decrement])
                 (new-cycle [:inc :dec])
                 (new-cycle [:upper :lower])
+                (new-cycle [:high :low])
                 (new-cycle [:up :down])
                 (new-cycle [:left :right])
+                (new-cycle [:width :height])
                 (new-cycle [:and :or])
                 (anywhere ["--" "++"])
                 (anywhere ["&&" "||"])
                 (new-cycle [:prepend :append])
                 (new-cycle [:precede :follow])
                 (new-cycle [:preceding :following])
+                (new-cycle [:prefix :suffix])
                 (new-cycle [:next :previous])
                 (new-cycle [:forward :backward])
                 (new-cycle [:foreground :background])
@@ -143,18 +151,20 @@
             (anywhere ["winsaveview()" "winrestview(view)"])])
 
 {: default
- :visual [(unpack default) alpha Alpha]
+ :visual (extend default [alpha Alpha])
  :markdown [markdown_header]
  : vim
- :lua [(unpack vim)
-       (anywhere ["==" "~="])
-       (words [:start :end])
-       (words [:setup :teardown])]
- :fennel [(unpack vim)
-          (anywhere ["(=" "(not="])
-          (words [:ctermfg :ctermbg])
-          (anywhere [:buf- :win-])
-          (words [:start :end])
-          (words [:setup :teardown])]
+ :lua (extend vim
+              [(anywhere ["==" "\\~="])
+               (words [:start :end])
+               (words [:setup :teardown])
+               ;; Wezterm font weights
+               (words [:Regular :Medium :DemiBold :Bold])])
+ :fennel (extend vim [(anywhere ["(=" "(not="])
+                      (words [:fn :lambda])
+                      (words [:ctermfg :ctermbg])
+                      (anywhere [:buf- :win-])
+                      (words [:start :end])
+                      (words [:setup :teardown])])
  :java [(words [:private :protected :public])]
  :snippets [(anywhere ["`!v " "!p snip.rv = "])]}

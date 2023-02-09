@@ -1,9 +1,5 @@
 (import-macros {: when-not
-                : nil?
-                : num?
-                : str?
-                : seq?
-                : tbl?
+                : if-not
                 : --
                 : ++
                 : dec
@@ -21,6 +17,23 @@
                 : valid-buf?
                 : expand} :my.macros)
 
+(local {: any?
+        : all?
+        : contains?
+        : empty?
+        : nil?
+        : boolean?
+        : true?
+        : false?
+        : str?
+        : tbl?
+        : seq?
+        : num?
+        : fn?
+        : function?
+        : odd?
+        : even?} (require :my.utils.predicate))
+
 (lambda valid-path? [path]
   ;; https://stackoverflow.com/a/40195356
   (let [[ok err code] (os.rename path path)]
@@ -35,58 +48,21 @@
       (: :match "@?(.*)")))
 
 (lambda get-definition-file [obj]
-  (-> (. ((debug.getinfo obj) :source))
+  (-> (. (debug.getinfo obj) :source)
       (string.match "^@(.*)")))
 
 (lambda get-definition-row [obj]
-  (-> (. ((debug.getinfo obj) :linedefined))))
+  (-> (. (debug.getinfo obj) :linedefined)))
 
-;; Predicate ///1
+(local Callbacks {:next-id 1})
 
-(lambda any? [pred xs]
-  (accumulate [any? false ;
-               _ x (ipairs xs) ;
-               &until any?]
-    (pred x)))
+(lambda Callbacks.register [cb]
+  (let [id Callbacks.next-id]
+    (tset Callbacks id cb)
+    (set Callbacks.next-id (inc id))
+    (printf "require'my.utils'.Callbacks[%d]()" id)))
 
-(lambda all? [pred xs]
-  (accumulate [all? true ;
-               _ x (ipairs xs) ;
-               &until (= all? false)]
-    (pred x)))
-
-(lambda contains? [xs ?a]
-  "Check if `?a` is in `xs`."
-  (accumulate [eq? false ;
-               _ x (ipairs xs) ;
-               &until eq?]
-    (= ?a x)))
-
-(lambda empty? [tbl]
-  "Check if `tbl` is empty."
-  (assert (tbl? tbl)
-          (-> "expected table, got %s: %s" (: :format (type tbl) (view tbl))))
-  (not (next tbl)))
-
-(lambda confirm? [msg ?choices]
-  "Wrapper of vim.fn.confirm. The default choices are No (default) or Yes."
-  (let [choices (or ?choices "[y/N]")]
-    (echo! (printf "%s -- %s" msg choices) :MoreMsg)
-    (if (= :y (vim.fn.getcharstr))
-        (do
-          (echo! (printf "%s -- confirmed" msg) :ModeMsg)
-          true)
-        (do
-          (vim.notify (printf "%s -- abort" msg) vim.log.levels.WARN)
-          false))))
-
-(lambda large-file? [max-bytes bufnr]
-  "Tell if `?bufnr`, or current buffer, is larger than `max-bytes`?"
-  (when (valid-buf? bufnr)
-    (let [(ok stats) (pcall vim.loop.fs_stat (vim.api.nvim_buf_get_name bufnr))]
-      (and ok stats (< max-bytes (. stats :size))))))
-
-;; Git ///1
+;;; Git ///1
 
 (lambda git [git-args ?path]
   "A wrapper of git in Neovim.
@@ -117,11 +93,11 @@
 
 (lambda git-tracking? [?path]
   "Check if `?path` is tracked by git."
-  (let [path (or ?path (expand "%:p"))]
-    (let [success? (pcall git [:ls-files :--error-unmatch path])]
-      success?)))
+  (let [path (or ?path (expand "%:p"))
+        success? (pcall git [:ls-files :--error-unmatch path])]
+    success?))
 
-;; String ///1
+;;; String ///1
 
 (fn capitalize [word]
   "capitalize `word`."
@@ -133,7 +109,16 @@
     _ (.. (-> (word:sub 1 1) (: :upper)) ;
           (word:sub 2))))
 
-;; Sequence ///1
+;;; Sequence ///1
+
+(lambda first [xs]
+  (. xs 1))
+
+(lambda second [xs]
+  (. xs 2))
+
+(lambda last [xs]
+  (. xs (length xs)))
 
 (lambda reverse [xs]
   (var i (length xs))
@@ -169,45 +154,50 @@
         (table.insert ys x)))
     ys))
 
-(fn join [...]
-  "Join strings by ?sep or tables:
-  ```fnl
-  (join \",\" [:foo :bar :baz]) ; -> \"foo,bar,baz\"
-  (join \"-\" [:foo :bar :baz]) ; -> \"foo-bar-baz\"
-  (join [:foo :bar :baz] [:qux :quux]) ; -> [:foo :bar :baz :qux :quux]
-  (join {: foo : bar : baz} {: qux : quux}) ; -> {: foo : bar : baz : qux : quux}
-  (join {: foo : bar : baz} {:foo :qux :bar :quux}) ; -> {:foo :qux :bar :quux : baz : qux : quux}
-  ```
-  Note: Joining tables which contains values at the same keys,
-  the latter ones have priority; the earlier ones are overwritten."
-  (let [args [...]
-        size (length args)
-        [x1 & rest] args]
-    (assert (<= 2 size) "expected two args at least")
-    (match (type x1)
-      :string (let [sep x1
-                    strings (unpack rest)
-                    str (table.concat strings sep)]
-                str)
-      :table (if (seq? x1)
-                 (do
-                   (var idx 1)
-                   (accumulate [ys [] _ tbl (ipairs args)]
-                     (do
-                       (each [_ v (ipairs tbl)]
-                         (tset ys idx v))
-                       (++ idx)
-                       ys)))
-                 (do
-                   (var [key val] [nil nil])
-                   (collect [_ tbls (ipairs args)]
-                     (each [k v (pairs tbls)]
-                       (set key k)
-                       (set val v))
-                     (values key val))))
-      _ (error (.. "expected string or table for the first arg, got " (type x1))))))
+(lambda extend [...]
+  "Merge multi arrays into one."
+  (let [xs []]
+    (each [_ arr (ipairs [...])]
+      ;; Note: `ipairs` cannot iterate array including `nil`. It might be
+      ;; better to drop `nil`s before iteration.
+      (each [_ v (pairs arr)]
+        (table.insert xs v)))
+    xs))
 
-;; Vim ///1
+(fn cycle [seq idx]
+  "Return item of `seq` at cyclic index, adjusted for 1-based Lua table.
+  @param seq table
+  @param idx number
+  @return any"
+  (assert (vim.tbl_islist seq) "Expected sequence")
+  (assert (num? idx) "Expected number")
+  (let [max-idx (length seq)
+        _ (assert (< 1 max-idx) "expected two or more sequential items")
+        tmp-idx (% idx max-idx)
+        new-idx (if (= 0 tmp-idx) max-idx tmp-idx)]
+    (. seq new-idx)))
+
+;;; File System ///1
+
+(lambda large-file? [max-bytes bufnr]
+  "Tell if `?bufnr`, or current buffer, is larger than `max-bytes`?"
+  (when (valid-buf? bufnr)
+    (let [(ok stats) (pcall vim.loop.fs_stat (vim.api.nvim_buf_get_name bufnr))]
+      (and ok stats (< max-bytes (. stats :size))))))
+
+;;; Vim ///1
+
+(lambda confirm? [msg ?choices]
+  "Wrapper of vim.fn.confirm. The default choices are No (default) or Yes."
+  (let [choices (or ?choices "[y/N]")]
+    (echo! (printf "%s -- %s" msg choices) :MoreMsg)
+    (if (= :y (vim.fn.getcharstr))
+        (do
+          (echo! (printf "%s -- confirmed" msg) :ModeMsg)
+          true)
+        (do
+          (vim.notify (printf "%s -- abort" msg) vim.log.levels.WARN)
+          false))))
 
 (lambda execute! [...]
   "Imitation of `:execute`. Execute Ex commands and functions one by one, not
@@ -244,11 +234,13 @@
   (if (str? cb)
       (let [ev (if (str? events) events (table.concat events ","))]
         (.. (<Cmd> "set eventignore=" ev) ;
-            cb (<Cmd> "set eventignore=" vim.g.eventignore))
-        (let [save-ei vim.g.eventignore]
-          (set vim.g.eventignore events)
-          (execute-callback cb)
-          (vim.schedule #(set vim.g.eventignore save-ei))))))
+            cb (<Cmd> "set eventignore=" vim.g.eventignore)))
+      (fn? cb)
+      (let [save-ei vim.g.eventignore]
+        (set vim.g.eventignore events)
+        (execute-callback cb)
+        (vim.schedule #(set vim.g.eventignore save-ei)))
+      (error (.. "Expected string or function, got " (type cb)))))
 
 (lambda noautocmd! [cb]
   "Imitation of `:noautocmd`.
@@ -266,10 +258,12 @@
   - `callback`: (string|function) If string, return it as in keymap rhs."
   (if (str? cb)
       (.. (<Cmd> "set lazyredraw") cb (<Cmd> "let lazyredraw = &lazyredraw"))
+      (fn? cb)
       (do
         (setglobal! :lazyredraw true)
         (execute-callback cb)
-        (vim.schedule #(setglobal! :lazyredraw false)))))
+        (vim.schedule #(setglobal! :lazyredraw false)))
+      (error (.. "Expected string or function got " (type cb)))))
 
 (lambda get-mapargs [mode lhs]
   (let [mappings (vim.api.nvim_get_keymap mode)]
@@ -292,28 +286,32 @@
 (local set-undoable/defaults {})
 (lambda set-undoable! [name ?val]
   "`:setlocal` for ftplugin, updating `b:undo_ftplugin`.
-  It can also manage global-only options such as `report`.
-  Note: `name` must be lower string."
-  (if (-> (vim.api.nvim_get_option_info name) (. :scope) (= :global))
-      (do
-        (when (nil? (. set-undoable/defaults name))
-          (tset set-undoable/defaults name (. vim.go name)))
-        (augroup! :myUtils/SetUndoable
-          (au! :BufLeave [:<buffer>]
-               #(setglobal! name (. set-undoable/defaults name))
-               {:desc (.. "utils: Restore &g:" name " to default")})
-          (au! :BufEnter [:<buffer>] #(setglobal! name ?val)
-               {:desc (.. "utils: Adjust &g:" name " for buffer")})))
-      (let [old-undo-ftplugin (or vim.b.undo_ftplugin "")
-            extracted-name (-> (name:lower) (: :match "[a-z]+"))]
-        (when-not (old-undo-ftplugin:match (.. extracted-name "<"))
-          (let [undo-cmd (printf "setl %s<" extracted-name)
-                sep-required? (and (old-undo-ftplugin:match "^%s$")
-                                   (not (old-undo-ftplugin:match "|%s*$")))
-                sep (if sep-required? "|" "")
-                new-undo-ftplugin (.. old-undo-ftplugin sep undo-cmd)]
-            (b! :undo_ftplugin new-undo-ftplugin)))))
-  (setlocal! name ?val))
+  It can also manage global-only options such as `report`."
+  (let [name* (name:lower)
+        {: scope} (vim.api.nvim_get_option_info name*)]
+    (if (= scope :global)
+        (do
+          (when (nil? (. set-undoable/defaults name*))
+            (tset set-undoable/defaults name* (. vim.go name*)))
+          (augroup! :myUtils/SetUndoable
+            (au! :BufLeave
+                 [:<buffer>
+                  :desc
+                  (printf "utils: Restore &g:%s to default" name*)]
+                 #(setglobal! name* (. set-undoable/defaults name*)))
+            (au! :BufEnter
+                 [:<buffer> :desc (.. "utils: Adjust &g:" name* " for buffer")]
+                 #(setglobal! name* ?val))))
+        (let [old-undo-ftplugin (or vim.b.undo_ftplugin "")
+              extracted-name (name*:match "[a-z]+")]
+          (when-not (old-undo-ftplugin:match (.. extracted-name "<"))
+            (let [undo-cmd (printf "setl %s<" extracted-name)
+                  sep-required? (and (not (old-undo-ftplugin:match "^%s*$"))
+                                     (not (old-undo-ftplugin:match "|%s*$")))
+                  sep (if sep-required? "|" "")
+                  new-undo-ftplugin (.. old-undo-ftplugin sep undo-cmd)]
+              (b! :undo_ftplugin new-undo-ftplugin)))))
+    (setlocal! name* ?val)))
 
 (lambda erase-buf [?buf]
   "Remove entire contents of buffer and close the buffer."
@@ -329,30 +327,43 @@
                                           update
                                           quit"))))
 
-(lambda find-root [raw-path]
-  "Find root for current buffer."
+(lambda find-root [?raw-path]
+  "Find root of `?raw-path` or of current buffer, where alternate buffer could
+  be another fallback if the others are empty. URI scheme is ignored.
+  @param ?raw-path string Target path to find root.
+  @return string?"
   (let [root-markers [:.git]
-        root-patterns [(vim.fn.stdpath :config)
-                       (vim.fn.stdpath :cache)
-                       (vim.fn.stdpath :data)
-                       (vim.fn.stdpath :state)
-                       (expand :$XDG_CONFIG_HOME)
-                       (expand :$XDG_CACHE_HOME)
-                       (expand :$XDG_DATA_HOME)
-                       (expand :$XDG_STATE_HOME)
-                       (expand :$VIMRUNTIME)]
+        extend-dir-pattern #(.. (vim.pesc $) "/.-/")
+        vim-runtime (expand :$VIMRUNTIME)
+        home (expand :$HOME)
+        root-patterns [(extend-dir-pattern (vim.fn.stdpath :config))
+                       (extend-dir-pattern (vim.fn.stdpath :cache))
+                       (extend-dir-pattern (vim.fn.stdpath :data))
+                       (extend-dir-pattern (vim.fn.stdpath :state))
+                       (extend-dir-pattern (expand :$XDG_CONFIG_HOME))
+                       (extend-dir-pattern (expand :$XDG_CACHE_HOME))
+                       (extend-dir-pattern (expand :$XDG_DATA_HOME))
+                       (extend-dir-pattern (expand :$XDG_STATE_HOME))
+                       (vim.pesc (.. vim-runtime :/lua))
+                       (extend-dir-pattern vim-runtime)
+                       (extend-dir-pattern home)
+                       (vim.pesc home)
+                       (extend-dir-pattern :/etc)
+                       (extend-dir-pattern :/usr/share)
+                       ;; Any other dirs at root like /tmp/ and /var/.
+                       "/.-/"]
         pattern-uri-scheme "^.*://"
-        path (-> raw-path (: :gsub pattern-uri-scheme "")
-                 (vim.fn.matchstr "\\f\\+"))
+        raw-path (or ?raw-path (expand "%:p"))
+        path (-> (if (= "" raw-path) (expand "#:p") raw-path)
+                 (: :gsub pattern-uri-scheme ""))
         ?first-root-marker-dir (-> (vim.fs.find root-markers
                                                 {: path :upward true})
                                    (. 1)
                                    (vim.fs.dirname))
-        ?first-root-pattern-dir (-> (vim.fs.find root-patterns
-                                                 {: path
-                                                  :upward true
-                                                  :type :directory})
-                                    (. 1))]
+        ?first-root-pattern-dir (accumulate [dir nil ;
+                                             _ pat (ipairs root-patterns) ;
+                                             &until dir]
+                                  (path:match (.. "^" pat)))]
     (if (and ?first-root-marker-dir ?first-root-pattern-dir)
         (if (< (length ?first-root-marker-dir) (length ?first-root-pattern-dir))
             ?first-root-pattern-dir
@@ -360,7 +371,41 @@
         (or ?first-root-marker-dir ?first-root-pattern-dir ;
             (error (printf "no root found for \"%s\"" path))))))
 
-;; Column ///1
+(lambda alias! [abbr result]
+  "Define command alias.
+  @param abbr bare-string
+  @param result string
+  @return string"
+  (let [callback #(if-not (= ":" (vim.fn.getcmdtype))
+                    abbr
+                    (let [line (vim.fn.getcmdline)
+                          col (vim.fn.getcmdpos)
+                          preceding-chars (line:sub 1 col)
+                          patterns [(.. "^%s*" abbr "$")
+                                    (.. "^%A+" abbr "$")
+                                    (.. "%|%s*" abbr "$")
+                                    (.. "%|%A+" abbr "$")]
+                          command? (accumulate [found? false ;
+                                                _ pat (ipairs patterns) ;
+                                                &until found?]
+                                     (preceding-chars:find pat))]
+                      (if command?
+                          (match (type result)
+                            :string
+                            result
+                            :function
+                            ;; Note: run function in callback; it should not run
+                            ;; in advance.
+                            (result)
+                            _
+                            (error (.. "invalid type: " (type result))))
+                          abbr)))
+        args [:<expr>
+              abbr
+              (printf "luaeval(%q)" (Callbacks.register callback))]]
+    (vim.cmd {:cmd :cnoreabbr : args})))
+
+;;; Column ///1
 
 (lambda override-column-color! [hl-name opts]
   "Override bg color of number-column (LineNr).
@@ -406,7 +451,7 @@
       (override-column-color! hl-name opts)
       (au! id :ColorScheme #(override-column-color! hl-name opts)))))
 
-;; Operator ///1
+;;; Operator ///1
 
 (local Operator {})
 
@@ -442,10 +487,7 @@
                                     :row02 (dec raw-row2)
                                     :col01 raw-col1
                                     :col02 raw-col2})
-                      ;; Note: Restore &operatorfunc should be required if
-                      ;; operators are to be nested; however, it should be kept
-                      ;; for dot-repeating.
-                      (comment (setglobal! :operatorfunc old-opfunc)))
+                      (setglobal! :operatorfunc old-opfunc))
         new-opfunc-name "v:lua.require'my.utils'.Operator.opfunc"]
     (set Operator.opfunc new-opfunc)
     (setglobal! :operatorfunc new-opfunc-name)))
@@ -490,17 +532,71 @@
   (Operator.set opfunc-body)
   (feedkeys! "g@" :ni))
 
-;; Export ///1
+;;; Lua ///1
+
+(fn get-func-definition [func]
+  (let [info (debug.getinfo func)]
+    (if (= :C info.what) "written in C"
+        (let [source (info.source:match "^@?(.*)$")]
+          (if (source:match :^vim/)
+              (let [func-name (?. info :name)]
+                (values (string.format "%s/lua/%s" vim.env.VIMRUNTIME source)
+                        (if func-name
+                            (.. "+/" func-name)
+                            :+1))))))))
+
+;; Ref: https://github.com/nanotee/nvim-lua-guide#tips-3
+(fn dump [...]
+  (if (= 0 (length [...]))
+      (do
+        (print nil)
+        ...)
+      (let [args [...]]
+        (if (= :function (type (. args 1)))
+            (let [func (. args 1)
+                  (file cmd-identifier) (get-func-definition func)]
+              (dump file)
+              (when (and cmd-identifier
+                         (= 1
+                            (vim.fn.confirm "Go to definition?" "&Yes\n&no" 1)))
+                (let [definition (if cmd-identifier
+                                     (string.format "%s %s" cmd-identifier file)
+                                     file)]
+                  (vim.cmd (string.format "sp %s" definition))
+                  (vim.cmd.normal! :zz)))
+              file)
+            (let [objects (vim.tbl_map vim.inspect args)]
+              (print (unpack objects))
+              ...)))))
+
+;;; Export ///1
 
 (set _G.noautocmd noautocmd!)
+(set _G.dump dump)
 
 {: valid-path?
  : get-script-path
  : get-definition-row
  : get-definition-file
+ : first
+ : second
+ : last
  : any?
  : all?
  : contains?
+ : empty?
+ : nil?
+ : boolean?
+ : true?
+ : false?
+ : str?
+ : tbl?
+ : seq?
+ : num?
+ : fn?
+ : function?
+ : odd?
+ : even?
  : empty?
  : confirm?
  : large-file?
@@ -511,7 +607,8 @@
  : remove
  : compact
  : slice
- : join
+ : extend
+ : cycle
  : execute!
  : with-eventignore!
  : noautocmd!
@@ -523,6 +620,8 @@
  : erase-buf
  : erase-win
  : find-root
+ : alias!
  : override-column-color!
  : register-column-highlight
- : Operator}
+ : Operator
+ : Callbacks}
